@@ -17,10 +17,6 @@ public class GeneralResponse<T> implements Serializable {
     private T data;
     private int total;
 
-    public GeneralResponse() {
-
-    }
-
     public static <T> GeneralResponse<T> ok() {
         return GeneralResponse.<T>builder()
                 .statusCode(HttpStatus.OK.value())
