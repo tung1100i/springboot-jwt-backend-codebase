@@ -1,2 +1,13 @@
 server:
   port: 8888
+
+spring:
+  datasource:
+    url: jdbc:postgresql://103.226.248.168:5432/vrp_ai?currentSchema=dev3year
+    username: vrp_ai
+    password: vrp
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect

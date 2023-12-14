@@ -10,10 +10,10 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 public class BusinessException extends RuntimeException {
-    private String code;
+    private int code;
     private String message;
 
-    public BusinessException(String code, String message) {
+    public BusinessException(int code, String message) {
         this.code = code;
         this.message = message;
     }

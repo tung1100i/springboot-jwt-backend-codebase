@@ -31,7 +31,7 @@ public class HandleException {
 
     @ExceptionHandler(BusinessException.class)
     public GeneralResponse<?> handleBusinessException(BusinessException ex) {
-        return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+        return GeneralResponse.error(ex.getCode(), ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
