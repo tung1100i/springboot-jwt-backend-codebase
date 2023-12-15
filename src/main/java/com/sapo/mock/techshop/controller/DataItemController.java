@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/categories/items")
+@RequestMapping("/api/v1/catalogs/items")
 public class DataItemController {
 
     @Autowired
