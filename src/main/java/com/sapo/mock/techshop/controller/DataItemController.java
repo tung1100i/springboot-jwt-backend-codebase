@@ -40,4 +40,24 @@ public class DataItemController {
     public GeneralResponse<?> getById(@PathVariable String id) {
         return dataItemService.getById(id);
     }
+
+    @PostMapping("/properties")
+    public GeneralResponse<?> createItemProperty(@RequestBody Map<String, Object> request) {
+        return dataItemService.createItemProperty(request);
+    }
+
+    @DeleteMapping("/properties/{name}")
+    public GeneralResponse<?> deleteItemProperty(@PathVariable String name) {
+        return dataItemService.deleteItemProperty(name);
+    }
+
+    @GetMapping("/properties/{name}")
+    public GeneralResponse<?> getItemProperty(@PathVariable String name) {
+        return dataItemService.getItemProperty(name);
+    }
+
+    @GetMapping("/properties")
+    public GeneralResponse<?> getListItemProperty() {
+        return dataItemService.getListItemProperty();
+    }
 }

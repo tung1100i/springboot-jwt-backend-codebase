@@ -12,5 +12,9 @@ public interface DataUserService {
     GeneralResponse<?> getUser(String id);
     GeneralResponse<?> updateUser(Map<String, Object> request, String id);
     GeneralResponse<?> bulkInsert(List<Map<String, Object>> request);
+    GeneralResponse<?> createUserProperty(Map<String, Object> request);
+    GeneralResponse<?> deleteUserProperty(String name);
+    GeneralResponse<?> getUserProperty(String propertyName);
+    GeneralResponse<?> getSpecificProperties();
 
 }

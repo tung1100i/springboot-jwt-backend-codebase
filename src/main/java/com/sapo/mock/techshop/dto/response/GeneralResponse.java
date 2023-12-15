@@ -10,7 +10,6 @@ import java.io.Serializable;
 @Getter
 @Setter
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class GeneralResponse<T> implements Serializable {
     private int statusCode;
     private String message;
@@ -44,6 +43,14 @@ public class GeneralResponse<T> implements Serializable {
         return GeneralResponse.<T>builder()
                 .statusCode(statusCode)
                 .message(message)
+                .build();
+    }
+
+    public static <T> GeneralResponse<T> ok(int statusCode, String message, T data) {
+        return GeneralResponse.<T>builder()
+                .statusCode(statusCode)
+                .message(message)
+                .data(data)
                 .build();
     }
 

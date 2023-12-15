@@ -1,5 +1,6 @@
 package com.sapo.mock.techshop.service.impl;
 
+import com.sapo.mock.techshop.common.constant.DataType;
 import com.sapo.mock.techshop.common.constant.HttpStatusConstant;
 import com.sapo.mock.techshop.dto.response.GeneralResponse;
 import com.sapo.mock.techshop.service.ConnectionService;
@@ -27,21 +28,8 @@ public class DataItemServiceImpl implements DataItemService {
         ResultSet resultSet = null;
         try {
             statement = connection.createStatement();
-            resultSet = statement.executeQuery("select * from properties where type_data = 'item' and property_name != 'item_id'");
-            int columnCount = resultSet.getMetaData().getColumnCount();
 
-            List<Map<String, Object>> properties = new ArrayList<>();
-
-            while (resultSet.next()) {
-                Map<String, Object> objectMap = new HashMap<>();
-                // Lặp qua từng cột
-                for (int i = 1; i <= columnCount; i++) {
-                    String columnName = resultSet.getMetaData().getColumnName(i);
-                    Object columnValue = resultSet.getObject(i);
-                    objectMap.put(columnName, columnValue);
-                }
-                properties.add(objectMap);
-            }
+            List<Map<String, Object>> properties = this.getProperties(connection);
 
             if (Objects.isNull(dataItemRequest.get("item_id")) || StringUtils.isBlank((String) dataItemRequest.get("item_id"))) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id field is required");
@@ -111,21 +99,7 @@ public class DataItemServiceImpl implements DataItemService {
         ResultSet resultSet = null;
         try {
             statement = connection.createStatement();
-            resultSet = statement.executeQuery("select * from properties where type_data = 'item' and property_name != 'item_id'");
-            int columnCount = resultSet.getMetaData().getColumnCount();
-
-            List<Map<String, Object>> properties = new ArrayList<>();
-
-            while (resultSet.next()) {
-                Map<String, Object> objectMap = new HashMap<>();
-                // Lặp qua từng cột
-                for (int i = 1; i <= columnCount; i++) {
-                    String columnName = resultSet.getMetaData().getColumnName(i);
-                    Object columnValue = resultSet.getObject(i);
-                    objectMap.put(columnName, columnValue);
-                }
-                properties.add(objectMap);
-            }
+            List<Map<String, Object>> properties = this.getProperties(connection);
 
             if (Objects.isNull(id) || StringUtils.isBlank(id)) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id field is required");
@@ -162,7 +136,7 @@ public class DataItemServiceImpl implements DataItemService {
                 statement.executeUpdate(stringBuffer.toString());
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
             // Đóng tất cả các resource sau khi sử dụng xong
             try {
@@ -176,20 +150,19 @@ public class DataItemServiceImpl implements DataItemService {
                 e.printStackTrace();
             }
         }
-
         return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE);
     }
 
     @Override
     public GeneralResponse<?> getById(String id) {
         Connection connection = connectionService.getConnection();
-        Statement statement;
         ResultSet resultSet = null;
+        PreparedStatement preparedStatement = null;
         try {
             if (!id.matches("^[a-zA-Z0-9_\\-:@.]+$")) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id does not match ^[a-zA-Z0-9_-:@.]+$");
             }
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM data_item WHERE item_id = ?");
+            preparedStatement = connection.prepareStatement("SELECT * FROM data_item WHERE item_id = ?");
             preparedStatement.setString(1, id);
 
             resultSet = preparedStatement.executeQuery();
@@ -206,10 +179,13 @@ public class DataItemServiceImpl implements DataItemService {
                 return GeneralResponse.ok(objectMap, HttpStatusConstant.SUCCESS_MESSAGE);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
             // Đóng tất cả các resource sau khi sử dụng xong
             try {
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                }
                 if (resultSet != null) {
                     resultSet.close();
                 }
@@ -225,8 +201,7 @@ public class DataItemServiceImpl implements DataItemService {
     @Override
     public GeneralResponse<?> bulkInsert(List<Map<String, Object>> data) {
         Connection connection = connectionService.getConnection();
-        Statement statement;
-        ResultSet resultSet = null;
+        Statement statement = null;
 
         int countError = 0;
         if (data.size() > 50000) {
@@ -234,21 +209,7 @@ public class DataItemServiceImpl implements DataItemService {
         }
         try {
             statement = connection.createStatement();
-            resultSet = statement.executeQuery("select * from properties where type_data = 'item'");
-            int columnCount = resultSet.getMetaData().getColumnCount();
-
-            List<Map<String, Object>> properties = new ArrayList<>();
-
-            while (resultSet.next()) {
-                Map<String, Object> objectMap = new HashMap<>();
-                // Lặp qua từng cột
-                for (int i = 1; i <= columnCount; i++) {
-                    String columnName = resultSet.getMetaData().getColumnName(i);
-                    Object columnValue = resultSet.getObject(i);
-                    objectMap.put(columnName, columnValue);
-                }
-                properties.add(objectMap);
-            }
+            List<Map<String, Object>> properties = this.getProperties(connection);
 
             List<String> propDb = new ArrayList<>();
             properties.forEach(property -> propDb.add((String) property.get("property_name")));
@@ -317,14 +278,13 @@ public class DataItemServiceImpl implements DataItemService {
             });
             stringBuffer.deleteCharAt(stringBuffer.length() - 1);
             statement.executeUpdate(stringBuffer.toString());
-        } catch (
-                SQLException e) {
-            throw new RuntimeException(e);
+        } catch (SQLException e) {
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
             // Đóng tất cả các resource sau khi sử dụng xong
             try {
-                if (resultSet != null) {
-                    resultSet.close();
+                if (statement != null) {
+                    statement.close();
                 }
                 if (connection != null) {
                     connection.close();
@@ -334,5 +294,213 @@ public class DataItemServiceImpl implements DataItemService {
             }
         }
         return GeneralResponse.ok(HttpStatus.OK.value(), String.format("Successfully imported %s records. Failed imported records might occur due to the item_id field is not present, or item_id exceeds the max length of 128 characters", data.size() - countError));
+    }
+
+    @Override
+    public GeneralResponse<?> createItemProperty(Map<String, Object> propertyReq) {
+        Connection connection = connectionService.getConnection();
+        Statement statement = null;
+
+        String property_name = (String) propertyReq.get("property-name");
+
+        if (!propertyReq.containsKey("property-name") || Objects.isNull(propertyReq.get("property-name")) || StringUtils.isBlank(property_name) ||
+                !property_name.matches("^[a-zA-Z_][0-9a-zA-Z_]*$") || property_name.length() > 50 || property_name.equals("id") || property_name.equals("item_id")) {
+            return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), HttpStatusConstant.INVALID_PROPERTY_ITEM);
+        }
+        try {
+            List<Map<String, Object>> properties = this.getProperties(connection);
+
+            List<String> propDb = new ArrayList<>();
+            properties.forEach(property -> propDb.add((String) property.get("property_name")));
+
+            if (propDb.contains(property_name)) {
+                return GeneralResponse.error(HttpStatus.CONFLICT.value(), HttpStatusConstant.CONFLICT_PROPERTY_ITEM);
+            }
+
+            if (!DataType.validType((String) propertyReq.get("type")) || StringUtils.isBlank((String) propertyReq.get("type"))) {
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), HttpStatusConstant.TYPE_NOT_DEFINE);
+            }
+
+            String typeData = DataType.getValueOf((String) propertyReq.get("type"));
+
+            statement = connection.createStatement();
+            statement.executeUpdate(String.format("INSERT INTO properties (property_name, data_type, type_data) VALUES ('%s', '%s', '%s')", property_name, typeData, "item"));
+            statement.executeUpdate("ALTER TABLE data_item ADD COLUMN " + property_name + " " + typeData);
+            return GeneralResponse.ok(HttpStatus.CREATED.value(), HttpStatusConstant.CREATE_SUCCESS_MESSAGE, Map.of("property-name", property_name, "type", typeData));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
+        } finally {
+            // Đóng tất cả các resource sau khi sử dụng xong
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public GeneralResponse<?> deleteItemProperty(String propertyName) {
+        Connection connection = connectionService.getConnection();
+        Statement statement = null;
+
+        try {
+            List<Map<String, Object>> properties = this.getProperties(connection);
+
+            List<String> propDb = new ArrayList<>();
+            properties.forEach(property -> propDb.add((String) property.get("property_name")));
+
+            if (!propDb.contains(propertyName)) {
+                return GeneralResponse.error(HttpStatus.CONFLICT.value(), HttpStatusConstant.ITEM_PROPERTY_NOT_EXIST);
+            }
+
+            statement = connection.createStatement();
+            statement.executeUpdate(String.format("DELETE FROM properties WHERE property_name = '%s' AND type_data = 'item'", propertyName));
+            statement.executeUpdate("ALTER TABLE data_item DROP COLUMN " + propertyName);
+            return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
+        } finally {
+            // Đóng tất cả các resource sau khi sử dụng xong
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public GeneralResponse<?> getItemProperty(String propertyName) {
+
+        Connection connection = connectionService.getConnection();
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+            List<Map<String, Object>> properties = this.getProperties(connection);
+
+            List<String> propDb = new ArrayList<>();
+            properties.forEach(property -> propDb.add((String) property.get("property_name")));
+
+            if (!propDb.contains(propertyName)) {
+                return GeneralResponse.error(HttpStatus.NOT_FOUND.value(), HttpStatusConstant.PROPERTY_NOT_IN_DATABASE);
+            }
+
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery(String.format("SELECT * FROM properties WHERE property_name = '%s' AND type_data = 'item'", propertyName));
+            if (resultSet.next()) {
+                Map<String, String> map = new HashMap<>();
+                map.put("property_name", resultSet.getString("property_name"));
+                map.put("data_type", resultSet.getString("data_type"));
+                return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE, map);
+            } else {
+                return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE, Collections.emptyMap());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
+        } finally {
+            // Đóng tất cả các resource sau khi sử dụng xong
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+                if (resultSet != null) {
+                    resultSet.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @Override
+    public GeneralResponse<?> getListItemProperty() {
+        Connection connection = connectionService.getConnection();
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery("SELECT * FROM properties WHERE type_data = 'user'");
+            List<Map<String, String>> list = new ArrayList<>();
+            while (resultSet.next()) {
+                Map<String, String> map = new HashMap<>();
+                map.put("data_type", resultSet.getString("data_type"));
+                map.put("property_name", resultSet.getString("property_name"));
+                list.add(map);
+            }
+            return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE, list);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
+        } finally {
+            // Đóng tất cả các resource sau khi sử dụng xong
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+
+                if (resultSet != null) {
+                    resultSet.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private List<Map<String, Object>> getProperties(Connection connection) {
+        Statement statement = null;
+        ResultSet resultSet = null;
+        List<Map<String, Object>> properties = new ArrayList<>();
+        try {
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery("select * from properties where type_data = 'item'");
+            int columnCount = resultSet.getMetaData().getColumnCount();
+
+
+            while (resultSet.next()) {
+                Map<String, Object> objectMap = new HashMap<>();
+                // Lặp qua từng cột
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = resultSet.getMetaData().getColumnName(i);
+                    Object columnValue = resultSet.getObject(i);
+                    objectMap.put(columnName, columnValue);
+                }
+                properties.add(objectMap);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (statement != null) {
+                    statement.close();
+                }
+                if (resultSet != null) {
+                    resultSet.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return properties;
     }
 }

@@ -25,12 +25,6 @@ public class ConnectionServiceImpl implements ConnectionService {
         try {
             // Kết nối đến cơ sở dữ liệu PostgreSQL
             connection = DriverManager.getConnection(url, user, password);
-
-//            Statement statement = connection.createStatement();
-//            ResultSet resultSet = statement.executeQuery("Select 1;");
-//            if(resultSet.next()) {
-//                System.out.println("Kết nối đến cơ sở dữ liệu thành công." + resultSet.getInt(1));
-//            }
         } catch (SQLException e) {
             System.out.println("Kết nối đến cơ sở dữ liệu thất bại.");
             e.printStackTrace();

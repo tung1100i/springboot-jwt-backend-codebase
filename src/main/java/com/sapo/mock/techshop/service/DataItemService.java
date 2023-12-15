@@ -12,4 +12,9 @@ public interface DataItemService {
 
     GeneralResponse<?> bulkInsert(List<Map<String, Object>> data);
 
+    GeneralResponse<?> createItemProperty(Map<String, Object> property);
+    GeneralResponse<?> deleteItemProperty(String propertyName);
+    GeneralResponse<?> getItemProperty(String propertyName);
+    GeneralResponse<?> getListItemProperty();
+
 }
