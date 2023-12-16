@@ -19,14 +19,14 @@ public class GeneralResponse<T> implements Serializable {
     public static <T> GeneralResponse<T> ok() {
         return GeneralResponse.<T>builder()
                 .statusCode(HttpStatus.OK.value())
-                .message(HttpStatus.OK.getReasonPhrase())
+                .message(HttpStatusConstant.SUCCESS_MESSAGE)
                 .build();
     }
 
     public static <T> GeneralResponse<T> ok(T data) {
         return GeneralResponse.<T>builder()
                 .statusCode(HttpStatus.OK.value())
-                .message(HttpStatus.OK.getReasonPhrase())
+                .message(HttpStatusConstant.SUCCESS_MESSAGE)
                 .data(data)
                 .build();
     }
@@ -54,12 +54,12 @@ public class GeneralResponse<T> implements Serializable {
                 .build();
     }
 
-    public static <T> GeneralResponse<T> error() {
+/*    public static <T> GeneralResponse<T> error() {
         return GeneralResponse.<T>builder()
                 .statusCode(HttpStatus.EXPECTATION_FAILED.value())
                 .message(HttpStatus.EXPECTATION_FAILED.getReasonPhrase())
                 .build();
-    }
+    }*/
 
     public static <T> GeneralResponse<T> error(int statusCode, String message) {
         return GeneralResponse.<T>builder()
@@ -67,9 +67,9 @@ public class GeneralResponse<T> implements Serializable {
                 .message(message).build();
     }
 
-    public static <T> GeneralResponse<T> error(HttpStatus code) {
+/*    public static <T> GeneralResponse<T> error(HttpStatus code) {
         return GeneralResponse.<T>builder()
                 .statusCode(code.value())
                 .message(code.getReasonPhrase()).build();
-    }
+    }*/
 }

@@ -3,7 +3,7 @@ package com.sapo.mock.techshop.controller;
 
 import com.sapo.mock.techshop.dto.response.GeneralResponse;
 import com.sapo.mock.techshop.service.DataUserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,22 +14,13 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/catalogs/users")
+@RequiredArgsConstructor
 public class DataUserController {
 
     /**
      * The DataUserService instance used for interacting with the database.
      */
-    private DataUserService dataUserService;
-
-    /**
-     * Autowires the DataUserService instance.
-     *
-     * @param dataUserService The DataUserService instance.
-     */
-    @Autowired
-    public DataUserController(DataUserService dataUserService) {
-        this.dataUserService = dataUserService;
-    }
+    private final DataUserService dataUserService;
 
     /**
      * Creates a new user in the database.
@@ -49,7 +40,7 @@ public class DataUserController {
      * @return A GeneralResponse containing the user information, or an error message.
      */
     @GetMapping("/{id}")
-    public GeneralResponse<?> createDataUser(@PathVariable("id") String id) {
+    public GeneralResponse<?> getById(@PathVariable("id") String id) {
         return dataUserService.getUser(id);
     }
 
@@ -83,7 +74,7 @@ public class DataUserController {
      * @return A GeneralResponse indicating the success or failure of the operation.
      */
     @PostMapping("/properties")
-    public GeneralResponse<?> bulkInsert(@RequestBody Map<String, Object> request) {
+    public GeneralResponse<?> createUserProperty(@RequestBody Map<String, Object> request) {
         return dataUserService.createUserProperty(request);
     }
 

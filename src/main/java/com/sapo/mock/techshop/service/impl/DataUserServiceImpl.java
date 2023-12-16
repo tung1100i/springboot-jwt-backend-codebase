@@ -1,5 +1,6 @@
 package com.sapo.mock.techshop.service.impl;
 
+import com.sapo.mock.techshop.common.Utils.DataUtils;
 import com.sapo.mock.techshop.common.constant.DataType;
 import com.sapo.mock.techshop.common.constant.HttpStatusConstant;
 import com.sapo.mock.techshop.dto.response.GeneralResponse;
@@ -44,9 +45,9 @@ public class DataUserServiceImpl implements DataUserService {
             List<Map<String, Object>> properties = this.getAllProperties(connection);
 
             String user_id = (String) dataUserRequest.get("user_id");
-            dataUserRequest.remove("user_id");
 
             List<String> proDb = properties.stream().map(property -> (String) property.get("property_name")).collect(Collectors.toList());
+            Map<String, String> mapPropertyType = properties.stream().collect(Collectors.toMap(property -> (String) property.get("property_name"), property -> (String) property.get("data_type")));
             boolean notInDb = dataUserRequest.keySet().stream().anyMatch(key -> !proDb.contains(key));
 
             if (notInDb) {
@@ -58,33 +59,38 @@ public class DataUserServiceImpl implements DataUserService {
             if (resultSet.next()) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The user_id is already present in the item catalog.");
             } else {
-                StringBuilder sql = new StringBuilder("INSERT INTO data_user (user_id, ");
+                StringBuilder sql = new StringBuilder("INSERT INTO data_user ( ");
                 dataUserRequest.keySet().forEach(key -> sql.append(key).append(", "));
                 sql.deleteCharAt(sql.lastIndexOf(","));
-                sql.append(") VALUES (").append("'").append(user_id).append("'");
-                dataUserRequest.forEach((key, value) -> sql.append(", ").append("'").append(value).append("'"));
+                sql.append(") VALUES (");
+                dataUserRequest.forEach((key, value) -> sql.append(DataUtils.getValue(value, mapPropertyType.get(key))).append(", "));
+                sql.deleteCharAt(sql.lastIndexOf(","));
                 sql.append(");");
                 statement.executeUpdate(sql.toString());
             }
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
-            try {
-                if (Objects.nonNull(connection)) {
-                    connection.close();
-                }
-                if (Objects.nonNull(resultSet)) {
-                    resultSet.close();
-                }
-                if (Objects.nonNull(statement)) {
-                    statement.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            handleConnection(connection, resultSet, statement);
 
         }
         return GeneralResponse.error(HttpStatus.CREATED.value(), HttpStatusConstant.CREATE_SUCCESS_MESSAGE);
+    }
+
+    private void handleConnection(Connection connection, ResultSet resultSet, Statement statement) {
+        try {
+            if (Objects.nonNull(connection)) {
+                connection.close();
+            }
+            if (Objects.nonNull(resultSet)) {
+                resultSet.close();
+            }
+            if (Objects.nonNull(statement)) {
+                statement.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -126,19 +132,7 @@ public class DataUserServiceImpl implements DataUserService {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
-            try {
-                if (Objects.nonNull(connection)) {
-                    connection.close();
-                }
-                if (Objects.nonNull(resultSet)) {
-                    resultSet.close();
-                }
-                if (Objects.nonNull(statement)) {
-                    statement.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            handleConnection(connection, resultSet, statement);
         }
     }
 
@@ -161,6 +155,7 @@ public class DataUserServiceImpl implements DataUserService {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The user_id field is required");
             }
             List<Map<String, Object>> properties = this.getAllProperties(connection);
+            Map<String, String> mapPropertyType = properties.stream().collect(Collectors.toMap(property -> (String) property.get("property_name"), property -> (String) property.get("data_type")));
 
             List<String> proDb = properties.stream().map(property -> (String) property.get("property_name")).collect(Collectors.toList());
             boolean notInDb = request.keySet().stream().anyMatch(key -> !proDb.contains(key));
@@ -175,7 +170,7 @@ public class DataUserServiceImpl implements DataUserService {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "User of the given user_id is not present in the catalog.");
             } else {
                 StringBuilder sql = new StringBuilder("UPDATE data_user SET ");
-                request.forEach((key, value) -> sql.append(key).append(" = ").append("'").append(value).append("'").append(", "));
+                request.forEach((key, value) -> sql.append(key).append(" = ").append(DataUtils.getValue(value, mapPropertyType.get(key))).append(", "));
                 sql.deleteCharAt(sql.lastIndexOf(","));
                 sql.append(" WHERE user_id = '").append(id).append("';");
                 statement.executeUpdate(sql.toString());
@@ -185,19 +180,7 @@ public class DataUserServiceImpl implements DataUserService {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
-            try {
-                if (Objects.nonNull(connection)) {
-                    connection.close();
-                }
-                if (Objects.nonNull(resultSet)) {
-                    resultSet.close();
-                }
-                if (Objects.nonNull(statement)) {
-                    statement.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            handleConnection(connection, resultSet, statement);
         }
     }
 
@@ -292,19 +275,7 @@ public class DataUserServiceImpl implements DataUserService {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
-            try {
-                if (Objects.nonNull(connection)) {
-                    connection.close();
-                }
-                if (Objects.nonNull(resultSet)) {
-                    resultSet.close();
-                }
-                if (Objects.nonNull(statement)) {
-                    statement.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            handleConnection(connection, resultSet, statement);
         }
     }
 
@@ -382,7 +353,7 @@ public class DataUserServiceImpl implements DataUserService {
             statement = connection.createStatement();
             statement.executeUpdate(String.format("DELETE FROM properties WHERE property_name = '%s' AND type_data ='user'", name));
             statement.executeUpdate(String.format("ALTER TABLE data_user DROP COLUMN %s", name));
-            return GeneralResponse.ok(HttpStatus.CREATED.value(), HttpStatusConstant.SUCCESS_MESSAGE);
+            return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE);
         } catch (SQLException e) {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
@@ -435,19 +406,7 @@ public class DataUserServiceImpl implements DataUserService {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
-            try {
-                if (Objects.nonNull(connection)) {
-                    connection.close();
-                }
-                if (Objects.nonNull(resultSet)) {
-                    resultSet.close();
-                }
-                if (Objects.nonNull(statement)) {
-                    statement.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            handleConnection(connection, resultSet, statement);
         }
     }
 
@@ -472,24 +431,12 @@ public class DataUserServiceImpl implements DataUserService {
                 obj.put("data_type", resultSet.getObject("type"));
                 objs.add(obj);
             }
-            return GeneralResponse.ok(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE, objs);
+            return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SQL_ERROR_CODE, objs);
         } catch (SQLException e) {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
-            try {
-                if (Objects.nonNull(connection)) {
-                    connection.close();
-                }
-                if (Objects.nonNull(resultSet)) {
-                    resultSet.close();
-                }
-                if (Objects.nonNull(statement)) {
-                    statement.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            handleConnection(connection, resultSet, statement);
         }
     }
 

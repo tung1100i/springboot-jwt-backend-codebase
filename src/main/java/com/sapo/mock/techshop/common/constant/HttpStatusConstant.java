@@ -2,7 +2,6 @@ package com.sapo.mock.techshop.common.constant;
 
 public class HttpStatusConstant {
     // success
-    public final static String SUCCESS_CODE = "00000";
     public final static String CREATE_SUCCESS_MESSAGE = "CREATE SUCCESS";
     public final static String SUCCESS_MESSAGE = "SUCCESS";
 

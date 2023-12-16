@@ -1,7 +1,6 @@
 package com.sapo.mock.techshop.common.exception.handler;
 
 
-import com.sapo.mock.techshop.common.exception.BusinessException;
 import com.sapo.mock.techshop.dto.response.GeneralResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -27,11 +26,6 @@ public class HandleException {
         log.error("SQLException => rootCause: {}", Arrays.stream(ex.getStackTrace()).findFirst());
         log.error("SQLException => message: {}", ex.getMessage());
         return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
-    }
-
-    @ExceptionHandler(BusinessException.class)
-    public GeneralResponse<?> handleBusinessException(BusinessException ex) {
-        return GeneralResponse.error(ex.getCode(), ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

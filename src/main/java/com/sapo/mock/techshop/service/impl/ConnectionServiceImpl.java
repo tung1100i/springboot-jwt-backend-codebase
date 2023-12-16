@@ -2,7 +2,6 @@ package com.sapo.mock.techshop.service.impl;
 
 import com.sapo.mock.techshop.service.ConnectionService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import java.sql.*;

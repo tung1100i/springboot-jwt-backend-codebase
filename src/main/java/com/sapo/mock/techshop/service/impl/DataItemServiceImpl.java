@@ -1,24 +1,26 @@
 package com.sapo.mock.techshop.service.impl;
 
+import com.sapo.mock.techshop.common.Utils.DataUtils;
 import com.sapo.mock.techshop.common.constant.DataType;
 import com.sapo.mock.techshop.common.constant.HttpStatusConstant;
 import com.sapo.mock.techshop.dto.response.GeneralResponse;
 import com.sapo.mock.techshop.service.ConnectionService;
 import com.sapo.mock.techshop.service.DataItemService;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
+@RequiredArgsConstructor
 public class DataItemServiceImpl implements DataItemService {
 
-    @Autowired
-    private ConnectionService connectionService;
+    private final ConnectionService connectionService;
 
     @Override
     public GeneralResponse<?> createDataItem(Map<String, Object> dataItemRequest) {
@@ -40,18 +42,18 @@ public class DataItemServiceImpl implements DataItemService {
             }
 
             String item_id = (String) dataItemRequest.get("item_id");
-            dataItemRequest.remove("item_id");
 
             List<String> propDb = new ArrayList<>();
 
             properties.forEach(property -> propDb.add((String) property.get("property_name")));
+            Map<String, String> mapPropertyType = properties.stream().collect(Collectors.toMap(property -> (String) property.get("property_name"), property -> (String) property.get("data_type")));
 
             boolean nonProp = dataItemRequest.keySet().stream().anyMatch(key -> !propDb.contains(key));
 
             if (nonProp) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database.");
             }
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT COUNT(*) FROM data_item WHERE item_id = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM data_item WHERE item_id = ?");
             preparedStatement.setString(1, item_id);
 
             resultSet = preparedStatement.executeQuery();
@@ -61,14 +63,12 @@ public class DataItemServiceImpl implements DataItemService {
             } else {
 
                 StringBuffer stringBuffer = new StringBuffer();
-                stringBuffer.append("INSERT INTO data_item (item_id");
-                dataItemRequest.keySet().forEach(key -> {
-                    stringBuffer.append(", ").append(key);
-                });
-                stringBuffer.append(") VALUES (").append(item_id);
-                dataItemRequest.forEach((key, value) -> {
-                    stringBuffer.append(", ").append(value);
-                });
+                stringBuffer.append("INSERT INTO data_item (");
+                dataItemRequest.keySet().forEach(key -> stringBuffer.append(key).append(", "));
+                stringBuffer.deleteCharAt(stringBuffer.lastIndexOf(","));
+                stringBuffer.append(") VALUES (");
+                dataItemRequest.forEach((key, value) -> stringBuffer.append(DataUtils.getValue(value, mapPropertyType.get(key))).append(","));
+                stringBuffer.deleteCharAt(stringBuffer.lastIndexOf(","));
                 stringBuffer.append(");");
                 statement.executeUpdate(stringBuffer.toString());
             }
@@ -110,6 +110,7 @@ public class DataItemServiceImpl implements DataItemService {
             List<String> propDb = new ArrayList<>();
 
             properties.forEach(property -> propDb.add((String) property.get("property_name")));
+            Map<String, String> mapPropertyType = properties.stream().collect(Collectors.toMap(property -> (String) property.get("property_name"), property -> (String) property.get("data_type")));
 
             boolean nonProp = dataItemRequest.keySet().stream().anyMatch(key -> !propDb.contains(key));
 
@@ -128,10 +129,8 @@ public class DataItemServiceImpl implements DataItemService {
             } else {
                 StringBuffer stringBuffer = new StringBuffer();
                 stringBuffer.append("UPDATE data_item SET ");
-                dataItemRequest.forEach((key, value) -> {
-                    stringBuffer.append(key).append(" =  ").append("'").append(value).append("'").append(",");
-                });
-                stringBuffer.deleteCharAt(stringBuffer.length() - 1);
+                dataItemRequest.forEach((key, value) -> stringBuffer.append(key).append(" =  ").append(DataUtils.getValue(value, mapPropertyType.get(key))).append(","));
+                stringBuffer.deleteCharAt(stringBuffer.lastIndexOf(","));
                 stringBuffer.append(" WHERE item_id = ").append("'").append(id).append("';");
                 statement.executeUpdate(stringBuffer.toString());
             }
@@ -211,6 +210,7 @@ public class DataItemServiceImpl implements DataItemService {
             statement = connection.createStatement();
             List<Map<String, Object>> properties = this.getProperties(connection);
 
+            Map<String, String> mapPropertyType = properties.stream().collect(Collectors.toMap(property -> (String) property.get("property_name"), property -> (String) property.get("data_type")));
             List<String> propDb = new ArrayList<>();
             properties.forEach(property -> propDb.add((String) property.get("property_name")));
             boolean badReq = false;
@@ -268,7 +268,7 @@ public class DataItemServiceImpl implements DataItemService {
                 stringBuffer.append("(");
                 propDb.forEach(prop -> {
                     if (item.containsKey(prop) && Objects.nonNull(item.get(prop))) {
-                        stringBuffer.append("'").append(item.get(prop)).append("'").append(",");
+                        stringBuffer.append(DataUtils.getValue(item.get(prop), mapPropertyType.get(prop))).append(",");
                     } else {
                         stringBuffer.append("null").append(",");
                     }
@@ -357,7 +357,7 @@ public class DataItemServiceImpl implements DataItemService {
             properties.forEach(property -> propDb.add((String) property.get("property_name")));
 
             if (!propDb.contains(propertyName)) {
-                return GeneralResponse.error(HttpStatus.CONFLICT.value(), HttpStatusConstant.ITEM_PROPERTY_NOT_EXIST);
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), HttpStatusConstant.ITEM_PROPERTY_NOT_EXIST);
             }
 
             statement = connection.createStatement();
@@ -389,14 +389,14 @@ public class DataItemServiceImpl implements DataItemService {
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-            List<Map<String, Object>> properties = this.getProperties(connection);
+//            List<Map<String, Object>> properties = this.getProperties(connection);
 
-            List<String> propDb = new ArrayList<>();
-            properties.forEach(property -> propDb.add((String) property.get("property_name")));
+//            List<String> propDb = new ArrayList<>();
+//            properties.forEach(property -> propDb.add((String) property.get("property_name")));
 
-            if (!propDb.contains(propertyName)) {
-                return GeneralResponse.error(HttpStatus.NOT_FOUND.value(), HttpStatusConstant.PROPERTY_NOT_IN_DATABASE);
-            }
+//            if (!propDb.contains(propertyName)) {
+//                return GeneralResponse.error(HttpStatus.NOT_FOUND.value(), HttpStatusConstant.PROPERTY_NOT_IN_DATABASE);
+//            }
 
             statement = connection.createStatement();
             resultSet = statement.executeQuery(String.format("SELECT * FROM properties WHERE property_name = '%s' AND type_data = 'item'", propertyName));
@@ -413,19 +413,7 @@ public class DataItemServiceImpl implements DataItemService {
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
             // Đóng tất cả các resource sau khi sử dụng xong
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-                if (connection != null) {
-                    connection.close();
-                }
-                if (resultSet != null) {
-                    resultSet.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            handleConnection(connection, statement, resultSet);
         }
     }
 
@@ -450,20 +438,23 @@ public class DataItemServiceImpl implements DataItemService {
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
         } finally {
             // Đóng tất cả các resource sau khi sử dụng xong
-            try {
-                if (statement != null) {
-                    statement.close();
-                }
-                if (connection != null) {
-                    connection.close();
-                }
+            handleConnection(connection, statement, resultSet);
+        }
+    }
 
-                if (resultSet != null) {
-                    resultSet.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
+    private void handleConnection(Connection connection, Statement statement, ResultSet resultSet) {
+        try {
+            if (statement != null) {
+                statement.close();
             }
+            if (connection != null) {
+                connection.close();
+            }
+            if (resultSet != null) {
+                resultSet.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -475,7 +466,6 @@ public class DataItemServiceImpl implements DataItemService {
             statement = connection.createStatement();
             resultSet = statement.executeQuery("select * from properties where type_data = 'item'");
             int columnCount = resultSet.getMetaData().getColumnCount();
-
 
             while (resultSet.next()) {
                 Map<String, Object> objectMap = new HashMap<>();

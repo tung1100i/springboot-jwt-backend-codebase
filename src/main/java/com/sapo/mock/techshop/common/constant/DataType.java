@@ -22,6 +22,7 @@ public enum DataType {
     private final String value;
 
     private static final Map<String, String> map = new HashMap<>();
+    private static final Map<String, String> reversetmap = new HashMap<>();
 
     DataType(String key, String value) {
         this.key = key;
@@ -31,11 +32,16 @@ public enum DataType {
     static {
         for (DataType bonusType : DataType.values()) {
             map.put(bonusType.key, bonusType.value);
+            reversetmap.put(bonusType.value, bonusType.key);
         }
     }
 
     public static String getValueOf(String key) {
         return map.get(key);
+    }
+
+    public static String getKeyOf(String value) {
+        return reversetmap.get(value);
     }
 
     public static boolean validType(String type) {

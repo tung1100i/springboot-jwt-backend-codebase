@@ -2,8 +2,7 @@ package com.sapo.mock.techshop.controller;
 
 import com.sapo.mock.techshop.dto.response.GeneralResponse;
 import com.sapo.mock.techshop.service.DataItemService;
-import com.sapo.mock.techshop.service.impl.PropertyServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,14 +10,9 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/catalogs/items")
+@RequiredArgsConstructor
 public class DataItemController {
-
-    @Autowired
-    private DataItemService dataItemService;
-
-
-    @Autowired
-    private PropertyServiceImpl propertyService;
+    private final DataItemService dataItemService;
 
     @PostMapping
     public GeneralResponse<?> createDataItem(@RequestBody Map<String, Object> request) {
