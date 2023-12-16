@@ -326,7 +326,7 @@ public class DataItemServiceImpl implements DataItemService {
             statement = connection.createStatement();
             statement.executeUpdate(String.format("INSERT INTO properties (property_name, data_type, type_data) VALUES ('%s', '%s', '%s')", property_name, typeData, "item"));
             statement.executeUpdate("ALTER TABLE data_item ADD COLUMN " + property_name + " " + typeData);
-            return GeneralResponse.ok(HttpStatus.CREATED.value(), HttpStatusConstant.CREATE_SUCCESS_MESSAGE, Map.of("property-name", property_name, "type", typeData));
+            return GeneralResponse.ok(HttpStatus.CREATED.value(), HttpStatusConstant.CREATE_SUCCESS_MESSAGE, Map.of("property-name", property_name, "type", DataType.getKeyOf(typeData)));
         } catch (SQLException e) {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
@@ -403,7 +403,7 @@ public class DataItemServiceImpl implements DataItemService {
             if (resultSet.next()) {
                 Map<String, String> map = new HashMap<>();
                 map.put("property_name", resultSet.getString("property_name"));
-                map.put("data_type", resultSet.getString("data_type"));
+                map.put("data_type", DataType.getKeyOf(resultSet.getString("data_type")));
                 return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE, map);
             } else {
                 return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE, Collections.emptyMap());
@@ -428,7 +428,7 @@ public class DataItemServiceImpl implements DataItemService {
             List<Map<String, String>> list = new ArrayList<>();
             while (resultSet.next()) {
                 Map<String, String> map = new HashMap<>();
-                map.put("data_type", resultSet.getString("data_type"));
+                map.put("data_type", DataType.getKeyOf(resultSet.getString("data_type")));
                 map.put("property_name", resultSet.getString("property_name"));
                 list.add(map);
             }

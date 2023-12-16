@@ -174,7 +174,7 @@ public class DataUserServiceImpl implements DataUserService {
                 sql.deleteCharAt(sql.lastIndexOf(","));
                 sql.append(" WHERE user_id = '").append(id).append("';");
                 statement.executeUpdate(sql.toString());
-                return GeneralResponse.ok(HttpStatusConstant.SUCCESS_MESSAGE);
+                return GeneralResponse.ok();
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -399,7 +399,7 @@ public class DataUserServiceImpl implements DataUserService {
             Map<String, Object> property = new HashMap<>();
             if (resultSet.next()) {
                 property.put("property_name", resultSet.getString("property_name"));
-                property.put("data_type", resultSet.getString("data_type"));
+                property.put("data_type", DataType.getKeyOf(resultSet.getString("data_type")));
             }
             return GeneralResponse.ok(property);
         } catch (SQLException e) {
@@ -428,10 +428,10 @@ public class DataUserServiceImpl implements DataUserService {
             while (resultSet.next()) {
                 Map<String, Object> obj = new HashMap<>();
                 obj.put("property-name", resultSet.getObject("propertyName"));
-                obj.put("data_type", resultSet.getObject("type"));
+                obj.put("data_type", DataType.getKeyOf(resultSet.getString("type")));
                 objs.add(obj);
             }
-            return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SQL_ERROR_CODE, objs);
+            return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE, objs);
         } catch (SQLException e) {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatusConstant.SQL_ERROR_CODE);
