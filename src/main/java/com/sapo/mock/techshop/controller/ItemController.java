@@ -18,7 +18,7 @@ public class ItemController {
     private final ItemService itemService;
 
     @PostMapping()
-    public GeneralResponse<?> createItem(@RequestParam Map<String, Object> itemRequest) {
+    public GeneralResponse<?> createItem(@RequestBody Map<String, Object> itemRequest) {
         return itemService.createItem(itemRequest);
     }
 

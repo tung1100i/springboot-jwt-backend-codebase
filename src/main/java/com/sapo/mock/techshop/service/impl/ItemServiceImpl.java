@@ -4,6 +4,7 @@ import com.sapo.mock.techshop.common.Utils.DataUtils;
 import com.sapo.mock.techshop.common.constant.DataType;
 import com.sapo.mock.techshop.common.constant.HttpStatusConstant;
 import com.sapo.mock.techshop.dto.response.GeneralResponse;
+import com.sapo.mock.techshop.service.ConnectionService;
 import com.sapo.mock.techshop.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -16,90 +17,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ItemServiceImpl extends ConnectionServiceImpl implements ItemService {
+public class ItemServiceImpl implements ItemService {
+
+    private final ConnectionService connectionService;
+
     @Override
     public GeneralResponse<?> createItem(Map<String, Object> itemRequest) {
-//        // tạo kết nối database
-//        Connection connection = getConnection();
-//        // tạo statement để thực thi câu lệnh sql
-//        Statement statement;
-//        ResultSet resultSet = null;
-//        try {
-//            statement = connection.createStatement();
-//            // Thực thi câu lệnh sql lấy các bản ghi có type_data là item trong bảng properties
-//            statement.executeQuery("SELECT * FROM properties WHERE type_data = 'item' and property_name != 'item_id'");
-//            //add trường property_name của các bản ghi thuộc query vừa tạo vào 1 array list String
-//            List<Map<String, Object>> properties = new ArrayList<>();
-//            while (statement.getResultSet().next()) {
-//                Map<String, Object> map = new HashMap<>();
-//                //lặp qua từng cột
-//                for (int i = 1; i <= statement.getResultSet().getMetaData().getColumnCount(); i++) {
-//                    //lấy tên cột
-//                    String columnName = statement.getResultSet().getMetaData().getColumnName(i);
-//                    //lấy giá trị của cột
-//                    String columnValue = statement.getResultSet().getString(i);
-//                    //add vào map
-//                    map.put(columnName, columnValue);
-//                }
-//                //thêm vào list
-//                properties.add(map);
-//            }
-//            //lặp qua các phần tử trong properties và in ra chúng
-//            for (Map<String, Object> property : properties) {
-//                System.out.println(property);
-//            }
-//
-//            //kiểm tra xem itemRequest có chứa item_id không hoặc item_id có bị bỏ trống không, nếu không có thì trả về lỗi
-//            if (itemRequest.get("item_id") == null || itemRequest.get("item_id").toString().isEmpty()) {
-//                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id is required");
-//            }
-//
-//            //kiểm tra xem item_id có vượt quá 128 ký tự hay không, nếu có thì trả về lỗi
-//            if (itemRequest.get("item_id").toString().length() > 128) {
-//                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id exceeds the max length of 128 characters");
-//            }
-//
-//            String item_id = itemRequest.get("item_id").toString();
-//            itemRequest.remove("item_id");
-//
-//            List<String> propDb = new ArrayList<>();
-//            //lặp qua các property trong properties, add vào propDb giá trị property_name
-//            for (Map<String, Object> property : properties) {
-//                propDb.add(property.get("property_name").toString());
-//            }
-//
-//            //Kiểm tra xem có bất kỳ phần tử nào trong tập hợp các khóa của itemRequest mà không tồn tại trong tập hợp propDb hay không
-//            boolean check = itemRequest.keySet().stream().anyMatch(key -> !propDb.contains(key));
-//            //nếu không có thì trả về lỗi
-//            if (check) {
-//                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database");
-//            }
-//
-//            //kiểm tra xem item_id có trùng với item_id của bản ghi nào trong bảng data_item hay không, nếu có thì trả về lỗi
-//            resultSet = statement.executeQuery("SELECT COUNT(*) FROM dev1year.data_item WHERE item_id = '" + item_id + "'");
-//
-//            if (resultSet.next()) {
-//                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id is already present in the item catalog.");
-//            } else {
-//                StringBuilder sql = new StringBuilder();
-//                sql.append("INSERT INTO dev1year.data_item (item_id");
-//                itemRequest.keySet().forEach(key -> sql.append(", ").append(key));
-//                sql.append(") VALUES ('").append(item_id);
-//                itemRequest.forEach((key, value) -> sql.append("', '").append(value));
-//                sql.append("');");
-//                statement.executeUpdate(sql.toString());
-//            };
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        } finally {
-//            //đóng kết nối
-//            try {
-//                connection.close();
-//            } catch (SQLException e) {
-//                e.printStackTrace();
-//            }
-//        }
-        Connection connection = this.getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement;
         ResultSet resultSet = null;
         try {
@@ -116,7 +40,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
             }
 
             String item_id = (String) itemRequest.get("item_id");
-            itemRequest.remove("item_id");
+//            itemRequest.remove("item_id");
 
             List<String> propDb = new ArrayList<>();
 
@@ -127,7 +51,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
             if (check) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database.");
             }
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT COUNT(*) FROM data_item WHERE item_id = ?");
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM data_item WHERE item_id = ?");
             preparedStatement.setString(1, item_id);
 
             resultSet = preparedStatement.executeQuery();
@@ -136,17 +60,20 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id is already present in the item catalog.");
             } else {
 
-                StringBuffer stringBuffer = new StringBuffer();
-                stringBuffer.append("INSERT INTO data_item (item_id");
+                StringBuilder sql = new StringBuilder();
+                sql.append("INSERT INTO data_item (");
                 itemRequest.keySet().forEach(key -> {
-                    stringBuffer.append(", ").append(key);
+                    sql.append(key).append(", ");
                 });
-                stringBuffer.append(") VALUES ('").append(item_id).append("'");
+                sql.deleteCharAt(sql.length() - 2);
+                sql.append(") VALUES (");
                 itemRequest.forEach((key, value) -> {
-                    stringBuffer.append(", '").append(value).append("'");
+//                    sql.append(", '").append(value).append("'");
+                    sql.append("'").append(value).append("'").append(", ");
                 });
-                stringBuffer.append(");");
-                statement.executeUpdate(stringBuffer.toString());
+                sql.deleteCharAt(sql.length() - 2);
+                sql.append(");");
+                statement.executeUpdate(sql.toString());
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -169,7 +96,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
     @Override
     public GeneralResponse<?> updateItem(Map<String, Object> itemRequest, String itemId){
         // tạo kết nối database
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         // tạo statement để thực thi câu lệnh sql
         Statement statement;
         try {
@@ -199,7 +126,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
 
             //kiểm tra xem itemRequest có chứa item_id không hoặc item_id có bị bỏ trống không, nếu không có thì trả về lỗi
             if (itemId == null || itemId.isEmpty()) {
-                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id is required");
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id field is required");
             }
 
             itemRequest.remove("item_id");
@@ -214,16 +141,16 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
             boolean check = itemRequest.keySet().stream().anyMatch(key -> !propDb.contains(key));
             //nếu không có thì trả về lỗi
             if (check) {
-                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database");
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database.");
             }
 
             //kiểm tra xem item_id có trùng với item_id của bản ghi nào trong bảng data_item hay không, nếu không thì trả về lỗi
-            statement.executeQuery("SELECT COUNT(*) FROM dev1year.data_item WHERE item_id = '" + itemId + "'");
+            statement.executeQuery("SELECT COUNT(*) FROM data_item WHERE item_id = '" + itemId + "'");
             if (!statement.getResultSet().next()) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id is not present in the item catalog.");
             } else {
                 StringBuilder sql = new StringBuilder();
-                sql.append("UPDATE dev1year.data_item SET ");
+                sql.append("UPDATE data_item SET ");
                 itemRequest.forEach((key, value) -> sql.append(key).append(" = '").append(value).append("'").append(","));
                 sql.deleteCharAt(sql.length() - 1);
                 sql.append(" WHERE item_id = '").append(itemId).append("';");
@@ -245,7 +172,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
     @Override
     public GeneralResponse<?> getItem(String itemId) {
         // tạo kết nối database
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         // tạo statement để thực thi câu lệnh sql
         Statement statement;
         try {
@@ -255,7 +182,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id does not match ^[a-zA-Z0-9_-:@.]+$");
             }
 
-            statement.executeQuery("SELECT * FROM dev1year.data_item WHERE item_id = '" + itemId + "'");
+            statement.executeQuery("SELECT * FROM data_item WHERE item_id = '" + itemId + "'");
             if (!statement.getResultSet().next()) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "The item_id is not present in the item catalog.");
             } else {
@@ -286,7 +213,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
     @Override
     public GeneralResponse<?> bulkImportItem(List<Map<String, Object>> itemRequest) {
         // tạo kết nối database
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         // tạo statement để thực thi câu lệnh sql
         Statement statement = null;
         ResultSet resultSet = null;
@@ -352,7 +279,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
 
             //Ghép toàn bộ thông tin lấy được thành câu lệnh insert
             StringBuilder sql = new StringBuilder();
-            sql.append("INSERT INTO dev1year.data_item ( ");
+            sql.append("INSERT INTO data_item ( ");
             propertyNames.forEach(property -> sql.append(property).append(","));
             sql.deleteCharAt(sql.length() - 1);
             sql.append(") VALUES ");
@@ -393,16 +320,14 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
 
     @Override
     public GeneralResponse<?> createItemProperty(Map<String, Object> request) {
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
 
         String property_name = (String) request.get("property-name");
         if (!request.containsKey("property-name") || Objects.isNull(request.get("property-name")) || property_name.isBlank() ||
                 !property_name.matches(DataUtils.REGEX) || property_name.length() > 50 || property_name.equals("id") || property_name.equals("item_id")) {
-            return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property name does not match ^[a-zA-Z_][0-9a-zA-Z_]*$, or it\n" +
-                    "is a reserved keyword (‘’id’’, ‘’item_id’’), or its length exceeds 50 characters.\n" +
-                    "Type information is missing, or the given type is invalid.");
+            return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property name does not match ^[a-zA-Z_][0-9a-zA-Z_]*$, or it is a reserved keyword (‘’id’’, ‘’item_id’’), or its length exceeds 50 characters. Type information is missing, or the given type is invalid.");
         }
         try {
             List<Map<String, Object>> properties = this.getProperties(connection);
@@ -416,16 +341,14 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
             }
             //Kiểm tra xem type có phải là Text, TextSet, Image, ImageSet, Timestamp, Boolean, Integer, Decimal hay không, nếu không thì trả về lỗi
             if (!DataType.validType(request.get("type").toString()) || Objects.isNull(request.get("type")) || request.get("type").toString().isBlank()) {
-                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property name does not match ^[a-zA-Z_][0-9a-zA-Z_]*$, or it\n" +
-                        "is a reserved keyword (‘’id’’, ‘’item_id’’), or its length exceeds 50 characters.\n" +
-                        "Type information is missing, or the given type is invalid.");
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property name does not match ^[a-zA-Z_][0-9a-zA-Z_]*$, or it is a reserved keyword (‘’id’’, ‘’item_id’’), or its length exceeds 50 characters. Type information is missing, or the given type is invalid.");
             }
 
             String data_type = DataType.getValueOf(request.get("type").toString());
             statement = connection.createStatement();
-//            statement.executeQuery("INSERT INTO dev1year.properties (property_name, data_type, type_data) VALUES ('" + property_name + "', '" + data_type + "', 'item')");
-            statement.executeUpdate(String.format("INSERT INTO dev1year.properties (property_name, data_type, type_data) VALUES ('%s', '%s', '%s')", property_name, data_type, "item"));
-            statement.executeUpdate("Alter table dev1year.data_item add column " + property_name + " " + data_type + ";");
+//            statement.executeQuery("INSERT INTO properties (property_name, data_type, type_data) VALUES ('" + property_name + "', '" + data_type + "', 'item')");
+            statement.executeUpdate(String.format("INSERT INTO properties (property_name, data_type, type_data) VALUES ('%s', '%s', '%s')", property_name, data_type, "item"));
+            statement.executeUpdate("Alter table data_item add column " + property_name + " " + data_type + ";");
             return GeneralResponse.ok(HttpStatus.CREATED.value(), HttpStatusConstant.CREATE_SUCCESS);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -437,7 +360,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
 
     @Override
     public GeneralResponse<?> deleteItemProperty(String propertyName) {
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
@@ -446,15 +369,12 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
             properties.forEach(property -> propertyNames.add((String) property.get("property_name")));
 
             if (!propertyNames.contains(propertyName)) {
-                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database. In\n" +
-                        "many cases, you may consider this code success – it only tells you that nothing\n" +
-                        "has been deleted from the database since the item property was already not\n" +
-                        "present.");
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database. In many cases, you may consider this code success – it only tells you that nothing has been deleted from the database since the item property was already not present.");
             }
 
             statement = connection.createStatement();
-            statement.executeUpdate("DELETE FROM dev1year.properties WHERE property_name = '" + propertyName + "' and type_data = 'item';");
-            statement.executeUpdate("Alter table dev1year.data_item drop column " + propertyName + ";");
+            statement.executeUpdate("DELETE FROM properties WHERE property_name = '" + propertyName + "' and type_data = 'item';");
+            statement.executeUpdate("Alter table data_item drop column " + propertyName + ";");
             return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -466,7 +386,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
 
     @Override
     public GeneralResponse<?> getItemProperty(String propertyName) {
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
@@ -479,7 +399,7 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
             }
 
             statement = connection.createStatement();
-            resultSet = statement.executeQuery("SELECT * FROM dev1year.properties WHERE property_name = '" + propertyName + "' and type_data = 'item'");
+            resultSet = statement.executeQuery("SELECT * FROM properties WHERE property_name = '" + propertyName + "' and type_data = 'item'");
             if (resultSet.next()) {
                 Map<String, String> property = new HashMap<>();
                 property.put("property-name", resultSet.getString("property_name"));
@@ -498,12 +418,12 @@ public class ItemServiceImpl extends ConnectionServiceImpl implements ItemServic
 
     @Override
     public GeneralResponse<?> getAllItemProperty() {
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
             statement = connection.createStatement();
-            resultSet = statement.executeQuery("SELECT property_name, data_type FROM dev1year.properties WHERE type_data = 'item'");
+            resultSet = statement.executeQuery("SELECT property_name, data_type FROM properties WHERE type_data = 'item'");
             List<Map<String, String>> listItemProperty = new ArrayList<>();
             while (resultSet.next()) {
                 Map<String, String> property = new HashMap<>();

@@ -4,7 +4,9 @@ import com.sapo.mock.techshop.common.Utils.DataUtils;
 import com.sapo.mock.techshop.common.constant.DataType;
 import com.sapo.mock.techshop.common.constant.HttpStatusConstant;
 import com.sapo.mock.techshop.dto.response.GeneralResponse;
+import com.sapo.mock.techshop.service.ConnectionService;
 import com.sapo.mock.techshop.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,12 +16,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
-public class UserServiceImpl extends ConnectionServiceImpl implements UserService {
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+
+    private final ConnectionService connectionService;
+
     @Override
     public GeneralResponse<?> createUser(Map<String, Object> userRequest) {
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
@@ -56,20 +63,24 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database.");
             }
 
-            resultSet = statement.executeQuery("SELECT * FROM dev1year.data_user WHERE user_id = '" + userId + "'");
+            resultSet = statement.executeQuery("SELECT * FROM data_user WHERE user_id = '" + userId + "'");
             if (resultSet.next()) {
                 return GeneralResponse.error(HttpStatus.CONFLICT.value(), "The user_id is already present in the user catalog.");
             } else {
                 StringBuilder sb = new StringBuilder();
-                sb.append("Insert into dev1year.data_user (user_id");
-                userRequest.keySet().forEach(key -> sb.append(", ").append(key));
-                sb.append(") values ('").append(userId);
-                userRequest.keySet().forEach(key -> sb.append("', '").append(userRequest.get(key)).append("'"));
+                sb.append("Insert into data_user (");
+                userRequest.keySet().forEach(key -> sb.append(key).append(", "));
+                sb.deleteCharAt(sb.length() - 2);
+                sb.append(") values (");
+                userRequest.forEach((key,value) -> sb.append("'").append(value).append("'").append(", "));
+                sb.deleteCharAt(sb.length() - 2);
                 sb.append(");");
                 statement.executeQuery(sb.toString());
+                return GeneralResponse.ok(HttpStatus.CREATED.value(), HttpStatusConstant.CREATE_SUCCESS);
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Database error occurred.");
         } finally {
             try {
                 if (Objects.nonNull(connection)) {
@@ -85,12 +96,11 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
                 e.printStackTrace();
             }
         }
-        return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.CREATE_SUCCESS);
     }
 
     @Override
     public GeneralResponse<?> updateUser(Map<String, Object> userRequest, String userId) {
-        Connection connection = getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
@@ -121,14 +131,14 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database.");
             }
 
-            resultSet = statement.executeQuery("SELECT COUNT(*) FROM dev1year.data_user WHERE user_id = '" + userId + "'");
+            resultSet = statement.executeQuery("SELECT COUNT(*) FROM data_user WHERE user_id = '" + userId + "'");
             resultSet.next();
             int count = resultSet.getInt(1);
             if (count < 1) {
                 return GeneralResponse.error(HttpStatus.CONFLICT.value(), "User of the given user_id is not present in the user catalog.");
             } else {
                 StringBuilder sb = new StringBuilder();
-                sb.append("Update dev1year.data_user SET ");
+                sb.append("Update data_user SET ");
                 userRequest.forEach((key, value) -> sb.append(key).append(" = '").append(value).append("'").append(","));
                 sb.deleteCharAt(sb.length() - 1);
                 sb.append(" WHERE user_id = '").append(userId).append("';");
@@ -144,7 +154,7 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
 
     @Override
     public GeneralResponse<?> getUser(String userId) {
-        Connection connection = this.getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
@@ -157,7 +167,7 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
             // Thực hiện truy vấn SQL
             resultSet = statement.executeQuery("SELECT * FROM data_user WHERE user_id = '" + userId + "'");
             if (!resultSet.next()) {
-                return GeneralResponse.error(HttpStatus.NOT_FOUND.value(), "No user found with the given user_id.");
+                return GeneralResponse.error(HttpStatus.NOT_FOUND.value(), "User of the given user_id is not present in the catalog.");
             } else {
                 Map<String, Object> map = new HashMap<>();
                 // Lặp qua từng cột và lấy thông tin
@@ -186,7 +196,7 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
 
     @Override
     public GeneralResponse<?> bulkImportUser(List<Map<String, Object>> userRequest) {
-        Connection connection = this.getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         int errorRecords = 0;
@@ -217,7 +227,7 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
             }
 
             statement = connection.createStatement();
-            resultSet = statement.executeQuery("SELECT * FROM dev1year.data_user");
+            resultSet = statement.executeQuery("SELECT * FROM data_user");
             List<String> userIds = new ArrayList<>();
             while (resultSet.next()) {
                 userIds.add(resultSet.getString("user_id"));
@@ -243,43 +253,46 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
             if (listImport.isEmpty()) {
                 return GeneralResponse.error(HttpStatus.OK.value(), "All records are invalid");
             }
-
-            StringBuilder sql = new StringBuilder();
-            sql.append("Insert into dev1year.data_user (");
-            propertyNames.forEach(property -> sql.append(property).append(", "));
-            sql.deleteCharAt(sql.length() - 2);
-            sql.append(") values ");
-            listImport.forEach(user -> {
-                sql.append("(");
-                propertyNames.forEach(property -> {
-                    if (user.containsKey(property)) {
-                        sql.append("'").append(user.get(property)).append("', ");
-                    } else {
-                        sql.append("'', ");
-                    }
+            try {
+                StringBuilder sql = new StringBuilder();
+                sql.append("Insert into data_user (");
+                propertyNames.forEach(property -> sql.append(property).append(", "));
+                sql.deleteCharAt(sql.length() - 2);
+                sql.append(") values ");
+                listImport.forEach(user -> {
+                    sql.append("(");
+                    propertyNames.forEach(property -> {
+                        if (user.containsKey(property)) {
+                            sql.append("'").append(user.get(property)).append("', ");
+                        } else {
+                            sql.append("'', ");
+                        }
+                    });
+                    sql.deleteCharAt(sql.length() - 2);
+                    sql.append("), ");
                 });
                 sql.deleteCharAt(sql.length() - 2);
-                sql.append("), ");
-            });
-            sql.deleteCharAt(sql.length() - 2);
-            sql.append(";");
-            statement.executeUpdate(sql.toString());
+                sql.append(";");
+                statement.executeUpdate(sql.toString());
+                return GeneralResponse.ok(HttpStatus.OK.value(), String.format("Successfully imported %s records. Failed imported records might occur due to the item_id field is not present, or item_id exceeds the max length of 128 characters", userRequest.size() - errorRecords));
+            } catch (SQLException ex) {
+                return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "The query returns a sql error");
+            }
         } catch (Exception e) {
             e.printStackTrace();
+            return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error");
         } finally {
             closeConnection(connection, resultSet, statement);
         }
-        return GeneralResponse.ok(HttpStatus.OK.value(),  String.format("Successfully imported %s records. Failed imported records might occur due to the item_id field is not present, or item_id exceeds the max length of 128 characters", userRequest.size() - errorRecords));
     }
 
     @Override
     public GeneralResponse<?> createUserProperty(Map<String, Object> request) {
-        Connection connection = this.getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
-        String propertyName = request.get("property-name").toString();
-        if (!request.containsKey("property-name") || propertyName.isBlank() || !propertyName.matches(DataUtils.REGEX) ||
-                propertyName.length() > 50 || Arrays.asList("id", "user_id").contains(propertyName)) {
+        if (!request.containsKey("property-name") || request.get("property-name").toString().isBlank() || !request.get("property-name").toString().matches(DataUtils.REGEX) ||
+                request.get("property-name").toString().length() > 50 || Arrays.asList("id", "user_id").contains(request.get("property-name").toString())) {
             return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property name does not match ^[a-zA-Z_][0-9a-zA-Z_]*$, or it\n" +
                     "is a reserved keyword (‘’id’’, ‘’user_id’’), or its length exceeds 50 characters.\n" +
                     "Type information is missing, or the given type is invalid.");
@@ -289,7 +302,7 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
             List<String> propertyNames = new ArrayList<>();
             properties.forEach(property -> propertyNames.add((String) property.get("property_name")));
 
-            if (propertyNames.contains(propertyName)) {
+            if (propertyNames.contains(request.get("property-name").toString())) {
                 return GeneralResponse.error(HttpStatus.CONFLICT.value(), "Property of the given name is already present in the database.");
             }
             // Kiểm tra xem type có hợp lệ hay không
@@ -300,8 +313,8 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
             String data_type = DataType.getValueOf(request.get("type").toString());
 
             statement = connection.createStatement();
-            statement.executeUpdate(String.format("Insert into dev1year.properties (property_name, data_type, type_data) values ('%s', '%s', '%s')", propertyName, data_type, "user"));
-            statement.executeUpdate(String.format("Alter table dev1year.data_user add column %s %s", propertyName, data_type));
+            statement.executeUpdate(String.format("Insert into properties (property_name, data_type, type_data) values ('%s', '%s', '%s')", request.get("property-name").toString(), data_type, "user"));
+            statement.executeUpdate(String.format("Alter table data_user add column %s %s", request.get("property-name").toString(), data_type));
             return GeneralResponse.ok(HttpStatus.CREATED.value(), HttpStatusConstant.CREATE_SUCCESS);
         } catch (Exception e) {
             e.printStackTrace();
@@ -313,7 +326,7 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
 
     @Override
     public GeneralResponse<?> deleteUserProperty(String name) {
-        Connection connection = this.getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
@@ -321,16 +334,16 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
             List<String> propertyNames = new ArrayList<>();
             properties.forEach(property -> propertyNames.add((String) property.get("property_name")));
 
-            if (!propertyNames.contains(name)) {
-                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database.");
-            }
-
             if (!name.matches("^[a-zA-Z0-9_\\-:]+$")) {
                 return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property name does not match ^[a-zA-Z0-9_-:]+$.");
             }
+
+            if (!propertyNames.contains(name)) {
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database.");
+            }
             statement = connection.createStatement();
-            statement.executeUpdate(String.format("DELETE from dev1year.properties WHERE property_name = '%s'", name));
-            statement.executeUpdate("ALTER TABLE dev1year.data_user DROP COLUMN " + name);
+            statement.executeUpdate(String.format("DELETE from properties WHERE property_name = '%s'", name));
+            statement.executeUpdate("ALTER TABLE data_user DROP COLUMN " + name);
             return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE);
         } catch (Exception e) {
             e.printStackTrace();
@@ -342,21 +355,28 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
 
     @Override
     public GeneralResponse<?> getUserProperty(String name) {
-        Connection connection = this.getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
+            if (StringUtils.isBlank(name) || !name.matches("^[a-zA-Z_][0-9a-zA-Z_]*$")) {
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property name does not match ^[a-zA-Z0-9_-:]+$.");
+            }
+            List<Map<String, Object>> properties = this.getProperties(connection);
+            List<String> proDb = properties.stream().map(property -> (String) property.get("property_name")).collect(Collectors.toList());
+
+            if (!proDb.contains(name)) {
+                return GeneralResponse.error(HttpStatus.BAD_REQUEST.value(), "Property of the given name is not present in the database.");
+            }
+
             statement = connection.createStatement();
-            resultSet = statement.executeQuery(String.format("SELECT * FROM dev1year.properties WHERE property_name = '%s'", name));
-            Map<String, Object> map = new HashMap<>();
+            resultSet = statement.executeQuery(String.format("SELECT * FROM properties WHERE property_name = '%s'", name));
+            Map<String, Object> property = new HashMap<>();
             if (resultSet.next()) {
-                Map<String, String> property = new HashMap<>();
                 property.put("property-name", resultSet.getString("property_name"));
                 property.put("type", resultSet.getString("data_type"));
-                return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS, property);
-            } else {
-                return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS, new HashMap<>());
             }
+            return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS, property);
         } catch (Exception e) {
             e.printStackTrace();
             return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Database error occurred.");
@@ -367,12 +387,12 @@ public class UserServiceImpl extends ConnectionServiceImpl implements UserServic
 
     @Override
     public GeneralResponse<?> getListUserProperty() {
-        Connection connection = this.getConnection();
+        Connection connection = connectionService.getConnection();
         Statement statement = null;
         ResultSet resultSet = null;
         try {
             statement = connection.createStatement();
-            resultSet = statement.executeQuery("SELECT property_name, data_type FROM dev1year.properties WHERE type_data = 'user'");
+            resultSet = statement.executeQuery("SELECT property_name, data_type FROM properties WHERE type_data = 'user'");
             List<Map<String, String>> properties = new ArrayList<>();
             while (resultSet.next()) {
                 Map<String, String> property = new HashMap<>();

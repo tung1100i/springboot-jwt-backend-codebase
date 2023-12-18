@@ -17,7 +17,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping()
-    public GeneralResponse<?> createUser(@RequestParam Map<String, Object> userRequest) {
+    public GeneralResponse<?> createUser(@RequestBody Map<String, Object> userRequest) {
         return userService.createUser(userRequest);
     }
 
