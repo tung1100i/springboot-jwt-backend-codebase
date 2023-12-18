@@ -6,6 +6,7 @@ import lombok.*;
 import org.springframework.http.HttpStatus;
 
 import java.io.Serializable;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -64,5 +65,17 @@ public class GeneralResponse<T> implements Serializable {
         return GeneralResponse.<T>builder()
                 .statusCode(code.value())
                 .message(code.getReasonPhrase()).build();
+    }
+
+    public static <T> GeneralResponse<T> ok(int statusCode, String message, T data) {
+        return GeneralResponse.<T>builder()
+                .statusCode(statusCode)
+                .message(message)
+                .data(data)
+                .build();
+    }
+
+    public int getStatus() {
+        return 0;
     }
 }

@@ -29,11 +29,6 @@ public class HandleException {
         return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
 
-    @ExceptionHandler(BusinessException.class)
-    public GeneralResponse<?> handleBusinessException(BusinessException ex) {
-        return GeneralResponse.error(ex.getCode(), ex.getMessage());
-    }
-
     @ExceptionHandler(Exception.class)
     public GeneralResponse<?> handleException(Exception ex) {
         log.error("Exception => rootCause: {}", Arrays.stream(ex.getStackTrace()).findFirst());

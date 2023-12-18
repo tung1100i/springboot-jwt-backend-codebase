@@ -1,5 +1,6 @@
 package com.sapo.mock.techshop.common.Utils;
 
+import com.sapo.mock.techshop.common.constant.DataType;
 import com.sapo.mock.techshop.common.exception.BusinessException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
@@ -29,5 +30,24 @@ public class DataUtils {
 
     public static boolean checkRegex(String input) {
         return input.matches(REGEX);
+    }
+
+    public static String getValue(Object value, String type) {
+        String valueString = null;
+        switch (DataType.getKeyOf(type)) {
+            case "Text":
+            case "TextSet":
+            case "Image":
+            case "ImageSet":
+            case "Timestamp":
+            case "Boolean":
+                valueString = "'" + value + "'";
+                break;
+            case "Integer":
+            case "Decimal":
+                valueString = String.valueOf(value);
+                break;
+        }
+        return valueString;
     }
 }
