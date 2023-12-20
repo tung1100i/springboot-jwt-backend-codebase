@@ -392,7 +392,7 @@ public class DataItemServiceImpl implements DataItemService {
             if (resultSet.next()) {
                 Map<String, String> map = new HashMap<>();
                 map.put(Constant.PROPERTY_NAME, resultSet.getString(Constant.PROPERTY_NAME));
-                map.put(Constant.DATA_TYPE, DataType.getKeyOf(resultSet.getString(Constant.DATA_TYPE)));
+                map.put(Constant.TYPE, DataType.getKeyOf(resultSet.getString(Constant.DATA_TYPE)));
                 return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE, map);
             } else {
                 return GeneralResponse.ok(HttpStatus.OK.value(), HttpStatusConstant.SUCCESS_MESSAGE, Collections.emptyMap());
