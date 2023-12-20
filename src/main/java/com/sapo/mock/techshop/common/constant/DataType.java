@@ -1,7 +1,6 @@
 package com.sapo.mock.techshop.common.constant;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public enum DataType {

@@ -13,10 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static junit.framework.TestCase.*;
 import static org.mockito.Mockito.when;
@@ -37,54 +34,76 @@ public class DataUserServiceImplTest {
     private DataUserServiceImpl dataUserService;
 
 
-    Map<String, Object> dataUserRequest = new HashMap<>();
+    Map<String, Object> request = new HashMap<>();
 
     @BeforeClass
-    public static void beforeClass() throws Exception {
-        Connection connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE", "sa", "");
-        Statement s = connection.createStatement();
-        s.execute("" +
-                "DROP TABLE IF EXISTS properties;" +
-                "DROP TABLE IF EXISTS data_user;" +
-                "DROP TABLE IF EXISTS data_item;" +
-                "CREATE TABLE properties (\n" +
-                "property_id int AUTO_INCREMENT NOT NULL,\n" +
-                "property_name varchar(255) NOT NULL,\n" +
-                "data_type varchar(255) NOT NULL,\n" +
-                "type_data varchar(255) NOT NULL,\n" +
-                "last_modified_time timestamp(0) NULL,\n" +
-                "create_time timestamp NULL DEFAULT CURRENT_TIMESTAMP,\n" +
-                "CONSTRAINT property_pkey PRIMARY KEY (property_id)\n" +
-                ");\n" +
-                "INSERT INTO properties (property_id,property_name,data_type,type_data) VALUES\n" +
-                " (1,'item_id','text','item'),\n" +
-                " (2,'last_update','timestamp','item'),\n" +
-                " (3,'user_id','text','user'),\n" +
-                " (4,'last_update','timestamp','user');\n" +
-                "\n" +
-                "CREATE TABLE data_user\n" +
-                "(\n" +
-                " user_id varchar(255) not NULL,\n" +
-                " last_update timestamp(0) null,\n" +
-                " constraint data_user_pkey PRIMARY KEY (user_id)\n" +
-                ");\n" +
-                "CREATE TABLE data_item\n" +
-                "(\n" +
-                " item_id varchar(255) not NULL,\n" +
-                " last_update timestamp(0) null,\n" +
-                " constraint data_item_pkey PRIMARY KEY (item_id)\n" +
-                ");" +
-                "INSERT INTO data_user (user_id, last_update) VALUES" +
-                "('user1234', '2009-11-12 17:49:30.000');");
-        PreparedStatement ps = connection.prepareStatement("select * from properties");
-        ResultSet r = ps.executeQuery();
-        if (r.next()) {
-            System.out.println("data?");
+    public static void beforeClass(){
+
+        Connection connection = null;
+        Statement s = null;
+        PreparedStatement ps = null;
+        ResultSet r = null;
+        try {
+            connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE", "sa", "");
+            s = connection.createStatement();
+            s.execute("" +
+                    "DROP TABLE IF EXISTS properties;" +
+                    "DROP TABLE IF EXISTS data_user;" +
+                    "DROP TABLE IF EXISTS data_item;" +
+                    "CREATE TABLE properties (\n" +
+                    "property_id int AUTO_INCREMENT NOT NULL,\n" +
+                    "property_name varchar(255) NOT NULL,\n" +
+                    "data_type varchar(255) NOT NULL,\n" +
+                    "type_data varchar(255) NOT NULL,\n" +
+                    "last_modified_time timestamp(0) NULL,\n" +
+                    "create_time timestamp NULL DEFAULT CURRENT_TIMESTAMP,\n" +
+                    "CONSTRAINT property_pkey PRIMARY KEY (property_id)\n" +
+                    ");\n" +
+                    "INSERT INTO properties (property_id,property_name,data_type,type_data) VALUES\n" +
+                    " (1,'item_id','text','item'),\n" +
+                    " (2,'last_update','timestamp','item'),\n" +
+                    " (3,'user_id','text','user'),\n" +
+                    " (4,'last_update','timestamp','user');\n" +
+                    "\n" +
+                    "CREATE TABLE data_user\n" +
+                    "(\n" +
+                    " user_id varchar(255) not NULL,\n" +
+                    " last_update timestamp(0) null,\n" +
+                    " constraint data_user_pkey PRIMARY KEY (user_id)\n" +
+                    ");\n" +
+                    "CREATE TABLE data_item\n" +
+                    "(\n" +
+                    " item_id varchar(255) not NULL,\n" +
+                    " last_update timestamp(0) null,\n" +
+                    " constraint data_item_pkey PRIMARY KEY (item_id)\n" +
+                    ");" +
+                    "INSERT INTO data_user (user_id, last_update) VALUES" +
+                    "('user1234', '2009-11-12 17:49:30.000');");
+            ps = connection.prepareStatement("select * from properties");
+            r = ps.executeQuery();
+            if (r.next()) {
+                System.out.println("data?");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (Objects.nonNull(r)) {
+                    r.close();
+                }
+                if (Objects.nonNull(ps)) {
+                    ps.close();
+                }
+                if (Objects.nonNull(s)) {
+                    s.close();
+                }
+                if (Objects.nonNull(connection)) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
-        r.close();
-        ps.close();
-        s.close();
-        connection.close();
     }
 
     @Before
@@ -95,22 +114,22 @@ public class DataUserServiceImplTest {
         connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE", "sa", "");
         Mockito.lenient().when(connectionService.getConnection()).thenReturn(connection);
         dataUserService = new DataUserServiceImpl(connectionService);
-        dataUserRequest.put("user_id", "user1234");
-        dataUserRequest.put("last_update", "2018-11-12 17:49:30.000");
+        request.put("user_id", "user1234");
+        request.put("last_update", "2018-11-12 17:49:30.000");
     }
 
     @Test
     @Order(1)
-    public void testCreateDataUser_Success() throws SQLException {
-        // Thiết lập dataUserRequest
+    public void testCreateDataUserSuccess() throws SQLException {
+        // Thiết lập dto
         // Khi getConnection() được gọi, trả về một connection mock
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "user123456");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "user123456");
         /////
         Mockito.when(resultSet.next()).thenReturn(true);
         Mockito.when(resultSet.getInt(1)).thenReturn(1);
         Mockito.when(resultSet.getString(2)).thenReturn("image");
-        Mockito.when(resultSet.getString(3)).thenReturn("image");
+        Mockito.when(resultSet.getString(3)).thenReturn("text");
         Mockito.when(resultSet.getString(4)).thenReturn("user");
         Mockito.when(resultSet.getTimestamp(5)).thenReturn(null);
         Mockito.when(resultSet.getTimestamp(6)).thenReturn(null);
@@ -121,7 +140,7 @@ public class DataUserServiceImplTest {
         when(resultSet.next()).thenReturn(true); // Giả lập không tìm thấy user_id trong ResultSet
 
         // Gọi phương thức cần kiểm tra
-        GeneralResponse<?> response = dataUserService.createDataUser(dataUserRequest);
+        GeneralResponse<?> response = dataUserService.createDataUser(dto);
 
         // Kiểm tra kết quả
         assertNotNull(response);
@@ -132,12 +151,12 @@ public class DataUserServiceImplTest {
 
     @Test
     @Order(2)
-    public void testCreateDataUser_SQL_Exception() throws SQLException {
-        // Thiết lập dataUserRequest
+    public void testCreateDataUserSQLException() throws SQLException {
+        // Thiết lập dto
         // Khi getConnection() được gọi, trả về một connection mock
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "user123456");
-        dataUserRequest.put("last_update", "2018-11-12 17:49:30.000 +0700");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "user123456");
+        dto.put("last_update", "2018-11-12 17:49:30.000 +0700");
         /////
         Mockito.when(resultSet.next()).thenReturn(true);
         Mockito.when(resultSet.getInt(1)).thenReturn(1);
@@ -153,7 +172,7 @@ public class DataUserServiceImplTest {
         when(resultSet.next()).thenReturn(true); // Giả lập không tìm thấy user_id trong ResultSet
 
         // Gọi phương thức cần kiểm tra
-        GeneralResponse<?> response = dataUserService.createDataUser(dataUserRequest);
+        GeneralResponse<?> response = dataUserService.createDataUser(dto);
 
         // Kiểm tra kết quả
         assertNotNull(response);
@@ -162,8 +181,8 @@ public class DataUserServiceImplTest {
 
     @Test
     @Order(3)
-    public void createDataUser_emptyRequestId_returnsError() {
-        GeneralResponse<?> response = dataUserService.createDataUser(dataUserRequest);
+    public void createDataUserEmptyRequestIdReturnsError() {
+        GeneralResponse<?> response = dataUserService.createDataUser(request);
         assertNotNull(response);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals("The user_id is already present in the item catalog.", response.getMessage());
@@ -171,13 +190,13 @@ public class DataUserServiceImplTest {
 
     @Test
     @Order(4)
-    public void createDataUser_longRequestId_returnsError() {
+    public void createDataUserLongRequestIdReturnsError() {
         // Arrange
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "a".repeat(129));
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "a".repeat(129));
 
         // Act
-        GeneralResponse<?> response = dataUserService.createDataUser(dataUserRequest);
+        GeneralResponse<?> response = dataUserService.createDataUser(dto);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
@@ -186,16 +205,16 @@ public class DataUserServiceImplTest {
 
     @Test
     @Order(5)
-    public void createDataUser_nonexistentProperties_returnsError() {
+    public void createDataUserNonexistentPropertiesReturnsError() {
         // Arrange
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "test_user");
-        dataUserRequest.put("property_1", "value_1");
-        dataUserRequest.put("property_2", 2);
-        dataUserRequest.put("nonexistent_property", "value");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "test_user");
+        dto.put("property_1", "value_1");
+        dto.put("property_2", 2);
+        dto.put("nonexistent_property", "value");
 
         // Act
-        GeneralResponse<?> response = dataUserService.createDataUser(dataUserRequest);
+        GeneralResponse<?> response = dataUserService.createDataUser(dto);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
@@ -204,13 +223,13 @@ public class DataUserServiceImplTest {
 
     @Test
     @Order(6)
-    public void createDataUser_existingRequestId_returnsError() {
+    public void createDataUserExistingRequestIdReturnsError() {
         // Arrange
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "user1234");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "user1234");
 
         // Act
-        GeneralResponse<?> response = dataUserService.createDataUser(dataUserRequest);
+        GeneralResponse<?> response = dataUserService.createDataUser(dto);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
@@ -219,13 +238,13 @@ public class DataUserServiceImplTest {
 
     @Test
     @Order(7)
-    public void createDataUser_blankRequestId_returnsError() {
+    public void createDataUserBlankRequestIdReturnsError() {
         // Arrange
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "");
 
         // Act
-        GeneralResponse<?> response = dataUserService.createDataUser(dataUserRequest);
+        GeneralResponse<?> response = dataUserService.createDataUser(dto);
 
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
@@ -259,8 +278,8 @@ public class DataUserServiceImplTest {
     @Test
     @Order(11)
     public void testGetUserSuccess() throws SQLException {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "user1234");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "user1234");
         Mockito.when(resultSet.next()).thenReturn(true);
         Mockito.when(resultSet.getString(1)).thenReturn("user1234");
         Mockito.when(resultSet.getString(2)).thenReturn("2009-11-12 17:49:30.000");
@@ -269,15 +288,15 @@ public class DataUserServiceImplTest {
         GeneralResponse<?> response = dataUserService.getUser("user1234");
         assertEquals(HttpStatus.OK.value(), response.getStatusCode());
         var result = (Map<String, Object>) response.getData();
-        assertEquals(result.get("user_id"), dataUserRequest.get("user_id"));
+        assertEquals(result.get("user_id"), dto.get("user_id"));
     }
 
     @Test
     @Order(12)
     public void testUpdateUserNonId() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "user1234");
-        GeneralResponse<?> response = dataUserService.updateUser(dataUserRequest, "");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "user1234");
+        GeneralResponse<?> response = dataUserService.updateUser(dto, "");
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals("The user_id field is required", response.getMessage());
     }
@@ -285,10 +304,10 @@ public class DataUserServiceImplTest {
     @Test
     @Order(13)
     public void testUpdateUserNonProperty() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "user1234");
-        dataUserRequest.put("hihi", "ggggg");
-        GeneralResponse<?> response = dataUserService.updateUser(dataUserRequest, "user1234");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "user1234");
+        dto.put("hihi", "ggggg");
+        GeneralResponse<?> response = dataUserService.updateUser(dto, "user1234");
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals("Property of the given name is not present in the database.", response.getMessage());
     }
@@ -301,7 +320,7 @@ public class DataUserServiceImplTest {
         Mockito.when(resultSet.getString(2)).thenReturn("2009-11-12 17:49:30.000");
         when(statement.executeQuery("SELECT * FROM data_user WHERE user_id = 'user1234'")).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true);
-        GeneralResponse<?> response = dataUserService.updateUser(dataUserRequest, "user1234");
+        GeneralResponse<?> response = dataUserService.updateUser(request, "user1234");
         assertEquals(HttpStatus.OK.value(), response.getStatusCode());
     }
 
@@ -309,33 +328,33 @@ public class DataUserServiceImplTest {
     @Order(15)
     public void testBulkInsertSuccess() throws SQLException {
 
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "test1");
-        dataUserRequest.put("last_update", "2023-12-15 13:41:02.910");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "test1");
+        dto.put("last_update", "2023-12-15 13:41:02.910");
 
-        Map<String, Object> dataUserRequest1 = new HashMap<>();
-        dataUserRequest1.put("user_id", "test2");
+        Map<String, Object> dto1 = new HashMap<>();
+        dto1.put("user_id", "test2");
 
-        Map<String, Object> dataUserRequest3 = new HashMap<>();
-        dataUserRequest3.put("user_id", "test2".repeat(30));
-        dataUserRequest3.put("last_update", "2023-12-15 13:41:02.910");
+        Map<String, Object> dto3 = new HashMap<>();
+        dto3.put("user_id", "test2".repeat(30));
+        dto3.put("last_update", "2023-12-15 13:41:02.910");
 
-        Map<String, Object> dataUserRequest4 = new HashMap<>();
-        dataUserRequest4.put("user_id", "user1234");
-        dataUserRequest4.put("last_update", "2023-12-15 13:41:02.910");
+        Map<String, Object> dto4 = new HashMap<>();
+        dto4.put("user_id", "user1234");
+        dto4.put("last_update", "2023-12-15 13:41:02.910");
 
         List<Map<String, Object>> list = new ArrayList<>();
-        list.add(dataUserRequest);
-        list.add(dataUserRequest1);
-        list.add(dataUserRequest3);
-        list.add(dataUserRequest4);
+        list.add(dto);
+        list.add(dto1);
+        list.add(dto3);
+        list.add(dto4);
 
         Mockito.when(resultSet.next()).thenReturn(true);
         Mockito.when(resultSet.getString(1)).thenReturn("user1234");
 
         when(statement.executeQuery("Select * from data_user")).thenReturn(resultSet);
 
-        GeneralResponse<?> response = dataUserService.bulkInsert(list);
+        GeneralResponse<?> response = dataUserService.importUser(list);
         assertEquals(HttpStatus.OK.value(), response.getStatusCode());
     }
 
@@ -343,43 +362,43 @@ public class DataUserServiceImplTest {
     @Order(16)
     public void testBulkInsertSqlEx() throws SQLException {
 
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("user_id", "test1");
-        dataUserRequest.put("last_update", "2023-12-15 13:41:02.910 +0700");
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("user_id", "test1");
+        dto.put("last_update", "2023-12-15 13:41:02.910 +0700");
 
-        Map<String, Object> dataUserRequest1 = new HashMap<>();
-        dataUserRequest1.put("user_id", "test2");
-        dataUserRequest1.put("last_update", "2023-12-15 13:41:02.910 +0700");
+        Map<String, Object> dto1 = new HashMap<>();
+        dto1.put("user_id", "test2");
+        dto1.put("last_update", "2023-12-15 13:41:02.910 +0700");
 
-        Map<String, Object> dataUserRequest3 = new HashMap<>();
-        dataUserRequest3.put("user_id", "test2".repeat(30));
-        dataUserRequest3.put("last_update", "2023-12-15 13:41:02.910 +0700");
+        Map<String, Object> dto3 = new HashMap<>();
+        dto3.put("user_id", "test2".repeat(30));
+        dto3.put("last_update", "2023-12-15 13:41:02.910 +0700");
 
-        Map<String, Object> dataUserRequest4 = new HashMap<>();
-        dataUserRequest4.put("user_id", "user1234");
-        dataUserRequest4.put("last_update", "2023-12-15 13:41:02.910");
+        Map<String, Object> dto4 = new HashMap<>();
+        dto4.put("user_id", "user1234");
+        dto4.put("last_update", "2023-12-15 13:41:02.910");
 
         List<Map<String, Object>> list = new ArrayList<>();
-        list.add(dataUserRequest);
-        list.add(dataUserRequest1);
-        list.add(dataUserRequest3);
-        list.add(dataUserRequest4);
+        list.add(dto);
+        list.add(dto1);
+        list.add(dto3);
+        list.add(dto4);
 
         Mockito.when(resultSet.next()).thenReturn(true);
         Mockito.when(resultSet.getString(1)).thenReturn("user1234");
 
         when(statement.executeQuery("Select * from data_user")).thenReturn(resultSet);
 
-        GeneralResponse<?> response = dataUserService.bulkInsert(list);
+        GeneralResponse<?> response = dataUserService.importUser(list);
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatusCode());
     }
 
     @Test
     @Order(17)
     public void testCreateUserPropertyNonName() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("type", "Text");
-        GeneralResponse<?> response = dataUserService.createUserProperty(dataUserRequest);
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("type", "Text");
+        GeneralResponse<?> response = dataUserService.createUserProperty(dto);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals(HttpStatusConstant.INVALID_PROPERTY_USER, response.getMessage());
     }
@@ -387,10 +406,10 @@ public class DataUserServiceImplTest {
     @Test
     @Order(18)
     public void testCreateUserPropertyBlankName() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("type", "Text");
-        dataUserRequest.put("property-name", "");
-        GeneralResponse<?> response = dataUserService.createUserProperty(dataUserRequest);
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("type", "Text");
+        dto.put("property-name", "");
+        GeneralResponse<?> response = dataUserService.createUserProperty(dto);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals(HttpStatusConstant.INVALID_PROPERTY_USER, response.getMessage());
     }
@@ -398,10 +417,10 @@ public class DataUserServiceImplTest {
     @Test
     @Order(19)
     public void testCreateUserPropertyNotMatchRegex() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("type", "Text");
-        dataUserRequest.put("property-name", "^%&%%^");
-        GeneralResponse<?> response = dataUserService.createUserProperty(dataUserRequest);
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("type", "Text");
+        dto.put("property-name", "^%&%%^");
+        GeneralResponse<?> response = dataUserService.createUserProperty(dto);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals(HttpStatusConstant.INVALID_PROPERTY_USER, response.getMessage());
     }
@@ -409,10 +428,10 @@ public class DataUserServiceImplTest {
     @Test
     @Order(20)
     public void testCreateUserPropertyMatchId() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("type", "Text");
-        dataUserRequest.put("property-name", "user_id");
-        GeneralResponse<?> response = dataUserService.createUserProperty(dataUserRequest);
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("type", "Text");
+        dto.put("property-name", "user_id");
+        GeneralResponse<?> response = dataUserService.createUserProperty(dto);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals(HttpStatusConstant.INVALID_PROPERTY_USER, response.getMessage());
     }
@@ -420,10 +439,10 @@ public class DataUserServiceImplTest {
     @Test
     @Order(21)
     public void testCreateUserPropertyLength() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("type", "Text");
-        dataUserRequest.put("property-name", "user_id".repeat(20));
-        GeneralResponse<?> response = dataUserService.createUserProperty(dataUserRequest);
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("type", "Text");
+        dto.put("property-name", "user_id".repeat(20));
+        GeneralResponse<?> response = dataUserService.createUserProperty(dto);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals(HttpStatusConstant.INVALID_PROPERTY_USER, response.getMessage());
     }
@@ -431,10 +450,10 @@ public class DataUserServiceImplTest {
     @Test
     @Order(22)
     public void testCreateUserPropertyLConflict() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("type", "Text");
-        dataUserRequest.put("property-name", "last_update");
-        GeneralResponse<?> response = dataUserService.createUserProperty(dataUserRequest);
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("type", "Text");
+        dto.put("property-name", "last_update");
+        GeneralResponse<?> response = dataUserService.createUserProperty(dto);
         assertEquals(HttpStatus.CONFLICT.value(), response.getStatusCode());
         assertEquals(HttpStatusConstant.CONFLICT_PROPERTY_USER, response.getMessage());
     }
@@ -442,10 +461,10 @@ public class DataUserServiceImplTest {
     @Test
     @Order(23)
     public void testCreateUserPropertyErrorType() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("type", "jhjs");
-        dataUserRequest.put("property-name", "hihihih");
-        GeneralResponse<?> response = dataUserService.createUserProperty(dataUserRequest);
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("type", "jhjs");
+        dto.put("property-name", "hihihih");
+        GeneralResponse<?> response = dataUserService.createUserProperty(dto);
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode());
         assertEquals(HttpStatusConstant.TYPE_NOT_DEFINE, response.getMessage());
     }
@@ -453,10 +472,10 @@ public class DataUserServiceImplTest {
     @Test
     @Order(24)
     public void testCreateUserPropertySuccess() {
-        Map<String, Object> dataUserRequest = new HashMap<>();
-        dataUserRequest.put("type", "Text");
-        dataUserRequest.put("property-name", "test");
-        GeneralResponse<?> response = dataUserService.createUserProperty(dataUserRequest);
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("type", "Text");
+        dto.put("property-name", "test");
+        GeneralResponse<?> response = dataUserService.createUserProperty(dto);
         assertEquals(HttpStatus.CREATED.value(), response.getStatusCode());
         assertEquals(HttpStatusConstant.SUCCESS_MESSAGE, response.getMessage());
     }

@@ -12,24 +12,24 @@ import java.util.Arrays;
 
 @RestControllerAdvice
 @Slf4j
-public class HandleException {
+public class HandleGlobal {
 
     @ExceptionHandler({NullPointerException.class})
-    public GeneralResponse<?> handleNullPointerException(NullPointerException nullPointerException) {
+    public GeneralResponse handleNullPointerException(NullPointerException nullPointerException) {
         log.error("NullPointerException => rootCause: {}", Arrays.stream(nullPointerException.getStackTrace()).findFirst());
         log.error("NullPointerException => message: {}", nullPointerException.getMessage());
         return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
 
     @ExceptionHandler({SQLException.class})
-    public GeneralResponse<?> handleSQLException(SQLException ex) {
+    public GeneralResponse handleSQLException(SQLException ex) {
         log.error("SQLException => rootCause: {}", Arrays.stream(ex.getStackTrace()).findFirst());
         log.error("SQLException => message: {}", ex.getMessage());
         return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
 
     @ExceptionHandler(Exception.class)
-    public GeneralResponse<?> handleException(Exception ex) {
+    public GeneralResponse handleException(Exception ex) {
         log.error("Exception => rootCause: {}", Arrays.stream(ex.getStackTrace()).findFirst());
         log.error("Exception => message: {}", ex.getMessage());
         return GeneralResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());

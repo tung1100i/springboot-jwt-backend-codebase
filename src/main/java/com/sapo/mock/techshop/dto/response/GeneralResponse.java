@@ -15,7 +15,6 @@ public class GeneralResponse<T> implements Serializable {
     private int statusCode;
     private String message;
     private T data;
-//    private Integer total;
 
     public static <T> GeneralResponse<T> ok() {
         return GeneralResponse.<T>builder()
@@ -55,22 +54,9 @@ public class GeneralResponse<T> implements Serializable {
                 .build();
     }
 
-/*    public static <T> GeneralResponse<T> error() {
-        return GeneralResponse.<T>builder()
-                .statusCode(HttpStatus.EXPECTATION_FAILED.value())
-                .message(HttpStatus.EXPECTATION_FAILED.getReasonPhrase())
-                .build();
-    }*/
-
     public static <T> GeneralResponse<T> error(int statusCode, String message) {
         return GeneralResponse.<T>builder()
                 .statusCode(statusCode)
                 .message(message).build();
     }
-
-/*    public static <T> GeneralResponse<T> error(HttpStatus code) {
-        return GeneralResponse.<T>builder()
-                .statusCode(code.value())
-                .message(code.getReasonPhrase()).build();
-    }*/
 }

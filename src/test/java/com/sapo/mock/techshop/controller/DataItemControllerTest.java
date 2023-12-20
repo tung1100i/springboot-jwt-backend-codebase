@@ -38,7 +38,7 @@ class DataItemControllerTest {
 
     @Test
     void bulkInsert() {
-        when(dataItemService.bulkInsert(List.of(new HashMap<>()))).thenReturn(GeneralResponse.ok());
+        when(dataItemService.importItem(List.of(new HashMap<>()))).thenReturn(GeneralResponse.ok());
         var result =dataItemController.bulkInsert(List.of(new HashMap<>()));
         assertEquals(HttpStatus.OK.value(), result.getStatusCode());
     }

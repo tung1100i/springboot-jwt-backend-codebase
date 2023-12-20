@@ -37,7 +37,7 @@ class DataUserControllerTest {
 
     @Test
     void bulkInsert() {
-        when(dataUserService.bulkInsert(List.of(new HashMap<>()))).thenReturn(GeneralResponse.ok());
+        when(dataUserService.importUser(List.of(new HashMap<>()))).thenReturn(GeneralResponse.ok());
         var result =dataUserController.bulkInsert(List.of(new HashMap<>()));
         assertEquals(HttpStatus.OK.value(), result.getStatusCode());
     }

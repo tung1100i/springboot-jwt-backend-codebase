@@ -29,7 +29,7 @@ public class DataUserController {
      * @return A GeneralResponse indicating the success or failure of the operation.
      */
     @PostMapping
-    public GeneralResponse<?> createDataUser(@RequestBody Map<String, Object> request) {
+    public GeneralResponse createDataUser(@RequestBody Map<String, Object> request) {
         return dataUserService.createDataUser(request);
     }
 
@@ -40,7 +40,7 @@ public class DataUserController {
      * @return A GeneralResponse containing the user information, or an error message.
      */
     @GetMapping("/{id}")
-    public GeneralResponse<?> getById(@PathVariable("id") String id) {
+    public GeneralResponse getById(@PathVariable("id") String id) {
         return dataUserService.getUser(id);
     }
 
@@ -52,7 +52,7 @@ public class DataUserController {
      * @return A GeneralResponse indicating the success or failure of the operation.
      */
     @PutMapping("/{id}")
-    public GeneralResponse<?> updateUser(@RequestBody Map<String, Object> request, @PathVariable("id") String id) {
+    public GeneralResponse updateUser(@RequestBody Map<String, Object> request, @PathVariable("id") String id) {
         return dataUserService.updateUser(request, id);
     }
 
@@ -63,8 +63,8 @@ public class DataUserController {
      * @return A GeneralResponse indicating the success or failure of the operation.
      */
     @PostMapping("/bulk-import")
-    public GeneralResponse<?> bulkInsert(@RequestBody List<Map<String, Object>> request) {
-        return dataUserService.bulkInsert(request);
+    public GeneralResponse bulkInsert(@RequestBody List<Map<String, Object>> request) {
+        return dataUserService.importUser(request);
     }
 
     /**
@@ -74,7 +74,7 @@ public class DataUserController {
      * @return A GeneralResponse indicating the success or failure of the operation.
      */
     @PostMapping("/properties")
-    public GeneralResponse<?> createUserProperty(@RequestBody Map<String, Object> request) {
+    public GeneralResponse createUserProperty(@RequestBody Map<String, Object> request) {
         return dataUserService.createUserProperty(request);
     }
 
@@ -85,7 +85,7 @@ public class DataUserController {
      * @return A GeneralResponse indicating the success or failure of the operation.
      */
     @DeleteMapping("/properties/{columnName}")
-    public GeneralResponse<?> deleteUserProperty(@PathVariable String columnName) {
+    public GeneralResponse deleteUserProperty(@PathVariable String columnName) {
         return dataUserService.deleteUserProperty(columnName);
     }
 
@@ -96,7 +96,7 @@ public class DataUserController {
      * @return A GeneralResponse containing the property information, or an error message.
      */
     @GetMapping("/properties/{columnName}")
-    public GeneralResponse<?> getUserProperty(@PathVariable String columnName) {
+    public GeneralResponse getUserProperty(@PathVariable String columnName) {
         return dataUserService.getUserProperty(columnName);
     }
 
@@ -106,7 +106,7 @@ public class DataUserController {
      * @return A GeneralResponse containing the list of properties, or an error message.
      */
     @GetMapping("/properties")
-    public GeneralResponse<?> getSpecificProperties() {
+    public GeneralResponse getSpecificProperties() {
         return dataUserService.getSpecificProperties();
     }
 }

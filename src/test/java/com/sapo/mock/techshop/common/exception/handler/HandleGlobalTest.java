@@ -11,13 +11,13 @@ import java.sql.SQLException;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-class HandleExceptionTest {
+class HandleGlobalTest {
 
-    private HandleException exception;
+    private HandleGlobal exception;
 
     @BeforeEach
     void setUp() {
-        exception = new HandleException();
+        exception = new HandleGlobal();
     }
 
     @Test

@@ -1,12 +1,14 @@
 package com.sapo.mock.techshop.service.impl;
 
 import com.sapo.mock.techshop.service.ConnectionService;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.sql.*;
 
 @Service
+@Log4j2
 public class ConnectionServiceImpl implements ConnectionService {
 
     @Value("${spring.datasource.url}")
@@ -25,7 +27,7 @@ public class ConnectionServiceImpl implements ConnectionService {
             // Kết nối đến cơ sở dữ liệu PostgreSQL
             connection = DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
-            System.out.println("Kết nối đến cơ sở dữ liệu thất bại.");
+            log.info("Kết nối đến cơ sở dữ liệu thất bại.");
             e.printStackTrace();
         }
         return connection;

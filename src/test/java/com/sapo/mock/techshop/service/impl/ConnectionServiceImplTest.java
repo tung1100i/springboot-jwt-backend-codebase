@@ -9,6 +9,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -20,15 +21,23 @@ class ConnectionServiceImplTest {
 
     private ConnectionServiceImpl connectionService;
 
-    @BeforeAll
-    public static void beforeClass() throws Exception {
-        Connection connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE", "sa", "");
-    }
-
     @BeforeEach
-    void setUp() throws SQLException {
+    void setUp() {
         connectionService = new ConnectionServiceImpl();
-        connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE", "sa", "");
+
+        try {
+            connection = DriverManager.getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE", "sa", "");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (Objects.nonNull(connection)) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
         ReflectionTestUtils.setField(connectionService, "url", "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE");
         ReflectionTestUtils.setField(connectionService, "user", "sa");
         ReflectionTestUtils.setField(connectionService, "password", "");

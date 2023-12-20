@@ -6,15 +6,15 @@ import java.util.List;
 import java.util.Map;
 
 public interface DataItemService {
-    GeneralResponse<?> createDataItem(Map<String, Object> dataItemRequest);
-    GeneralResponse<?> update(Map<String, Object> dataItemRequest, String id);
-    GeneralResponse<?> getById(String id);
+    GeneralResponse createDataItem(Map<String, Object> dataItemRequest);
+    GeneralResponse update(Map<String, Object> dataItemRequest, String id);
+    GeneralResponse getById(String id);
 
-    GeneralResponse<?> bulkInsert(List<Map<String, Object>> data);
+    GeneralResponse importItem(List<Map<String, Object>> data);
 
-    GeneralResponse<?> createItemProperty(Map<String, Object> property);
-    GeneralResponse<?> deleteItemProperty(String propertyName);
-    GeneralResponse<?> getItemProperty(String propertyName);
-    GeneralResponse<?> getListItemProperty();
+    GeneralResponse createItemProperty(Map<String, Object> property);
+    GeneralResponse deleteItemProperty(String propertyName);
+    GeneralResponse getItemProperty(String propertyName);
+    GeneralResponse getListItemProperty();
 
 }
