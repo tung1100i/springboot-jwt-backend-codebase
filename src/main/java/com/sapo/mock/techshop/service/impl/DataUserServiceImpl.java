@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 
@@ -470,6 +471,110 @@ public class DataUserServiceImpl implements DataUserService {
             }
         }
         return properties;
+    }
+
+    public static void main(String[] args) {
+        Map<String, String> xxx =new HashMap<>();
+
+        xxx.put("basic_type", "basic_type");
+        xxx.put("description", "description");
+        xxx.put("created_date", "2023-12-25 17:10:39");
+        xxx.put("long_time", "1704868132864");
+        xxx.put("salary", "1708132864");
+        xxx.put("year", "2023");
+        xxx.put("address", "No 60 Hoang Quoc Viet, Nghia Do, Cau Giay");
+        xxx.put("weight", "4566");
+        xxx.put("temp", "37.5");
+        xxx.put("expression", "jfkjfkjsfkjwieojfoiwejfksjfk");
+        xxx.put("updated_date", "2023-12-25 17:10:39");
+        xxx.put("status", "1");
+        xxx.put("total", "10.25");
+        xxx.put("field_type", "N");
+        xxx.put("date_of_birth", "2010-01-12");
+        xxx.put("is_good", "2010-01-12");
+
+        String aa = "varchar, longtext, bigint, datetime, int. decimal, tinyint, blob, smallint, double, text, timestamp, bit, binary, float, char, date";
+
+//        System.out.println(xxx.values().stream().map(i -> "\"" + i + "\"").collect(Collectors.toList()));
+//        System.out.println(new ArrayList<>(xxx.keySet()));
+        System.out.println(new Date());
+
+        String string = "[1, 2.3, 'abc']";
+
+        String[] elements = string.split(",");
+//        String[] elements = string.replace("[", "").replace("]", "").split(",");
+
+        System.out.println(elements);
+
+//        List<String> fields = new ArrayList<>(List.of("basic_type",
+//                "description", "created_date",
+//                "long_time", "salary",
+//                "sex", "address",
+//                "weight", "temp",
+//                "expression", "updated_date",
+//                "status", "total",
+//                "field_type", "date_of_birth"));
+//        String primaryKey = "field2";
+//        int primaryPos = fields.lastIndexOf(primaryKey);
+//        Map<String, String> mapNameType = Map.of("field1", "TEXT", "field2", "String", "field3", "double", "field4", "time");
+//
+//        List<String> values = new ArrayList<>();
+//        for (int i = 0; i < 20; i++) {
+//            values.add("value" + i);
+//        }
+//
+//        Map<Integer, String> mapPosType = new HashMap<>();
+//        for (int i = 0; i < fields.size(); i++) {
+//            mapPosType.put(i, mapNameType.get(fields.get(i)));
+//        }
+//
+//        int totalSize = values.size();
+//        int splitSize = fields.size();
+//
+//        List<String> keys = new ArrayList<>();
+//        for (int i = primaryPos; i < totalSize; i += splitSize) {
+//            keys.add(getValue(values.get(i), mapPosType.get(primaryPos)));
+//        }
+////        System.out.println(keys);
+//
+//
+//
+//        String result = keys.stream()
+//                .collect(Collectors.joining(", ", "(", ")"));
+//
+//        String builder = "SELECT tbl." + primaryKey + " FROM " + " table_name tbl WHERE " +
+//                " tbl." + primaryKey + " IN " + result;
+//
+//        List<String> bbb = new ArrayList<>(List.of("value9"));
+//        System.out.println(haveCommonElementWithSet(values, bbb));
+
+//        for (String value : values) {
+//            System.out.print("\"" + value + "\",");
+//        }
+    }
+
+    public static String getValue(String value, String type) {
+        String valueString;
+        switch (type) {
+            case "TEXT":
+            case "String":
+                valueString = "'" + value + "'";
+                break;
+            default:
+                valueString = String.valueOf(value);
+                break;
+        }
+        return valueString;
+    }
+
+    public static boolean haveCommonElementWithSet(List<String> list1, List<String> list2) {
+        Set<String> set = new HashSet<>(list1);
+        for (String item : list2) {
+            if (set.contains(item)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
