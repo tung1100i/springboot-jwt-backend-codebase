@@ -1,81 +1,30 @@
 package com.sapo.mock.techshop.schedules;
 
 
+import com.sapo.mock.techshop.service.TestService;
+import com.sapo.mock.techshop.service.impl.ActivityManager;
+import com.sapo.mock.techshop.service.impl.ErrorWatcher;
+import com.sapo.mock.techshop.service.impl.TestServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.leader.LeaderSelector;
-import org.apache.curator.framework.recipes.leader.LeaderSelectorListener;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
-import org.apache.curator.framework.state.ConnectionState;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class TestJob {
 
-    @Autowired
-    private CuratorFramework client;
-    private final String lockPath = "/schedule/";
+    private final TestService testService;
+    private final CuratorFramework curatorFramework;
 
-    @Scheduled(fixedRate = 30000, initialDelay = 10000)
-    public void scheduleTask() {
-        InterProcessSemaphoreMutex sharedLock = new InterProcessSemaphoreMutex(client, lockPath + "scheduleTask");
-//        LeaderSelector leaderSelector = this.getLeaderSelector("scheduleTask");
-        try {
-//            if (this.acquiredLock("scheduleTask")) {
-            sharedLock.acquire();
-            System.out.println("Running task");
-//            releaseLock("scheduleTask");
-            sharedLock.release();
-        } catch (Exception e) {
-            System.out.println("Loi khi chay");
-        }
+    //   @Scheduled(fixedRate = 30000, initialDelay = 10000)
+    @Scheduled(cron = "0,15,30,45 * * * * *")
+    public void scheduleTask() throws Exception {
+        ActivityManager activityManager = new ActivityManager(curatorFramework, testService);
+        ErrorWatcher watcher = new ErrorWatcher(activityManager, curatorFramework);
 
-    }
-
-    private boolean acquiredLock(String job) {
-        try {
-            LeaderSelector leaderSelector = new LeaderSelector(client,
-                    lockPath + job,
-                    new LeaderSelectorListener() {
-                        @Override
-                        public void stateChanged(
-                                CuratorFramework client,
-                                ConnectionState newState) {
-                        }
-
-                        @Override
-                        public void takeLeadership(
-                                CuratorFramework client) throws Exception {
-                        }
-                    });
-            leaderSelector.start();
-            return true;
-        } catch (Exception e) {
-            System.out.println("------");
-            return false;
-        }
-    }
-
-    private void releaseLock(String job) throws Exception {
-        client.delete().forPath(lockPath + job);
-    }
-
-    private LeaderSelector getLeaderSelector(String job) {
-        return new LeaderSelector(client,
-                lockPath + job,
-                new LeaderSelectorListener() {
-                    @Override
-                    public void stateChanged(
-                            CuratorFramework client1,
-                            ConnectionState newState) {
-                    }
-
-                    @Override
-                    public void takeLeadership(
-                            CuratorFramework client1) throws Exception {
-                    }
-                });
+        // Đặt watcher cho counter
+        watcher.setWatcher("scheduleTask");
+        activityManager.performActivity("scheduleTask");
     }
 }

@@ -1,15 +1,15 @@
 server:
 #  port: ${SERVER_PORT:8080}
-  port: 8080
+  port: 8081
 
 spring:
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/vrp_ai?currentSchema=public}
-    username: ${USERNAME}
-    password: ${PASSWORD}
-#    url: jdbc:postgresql://103.82.132.72:5432/postgres
-#    username: postgres
-#    password: postgres123
+#    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/vrp_ai?currentSchema=public}
+#    username: ${USERNAME}
+#    password: ${PASSWORD}
+    url: jdbc:postgresql://103.82.132.72:5432/postgres
+    username: postgres
+    password: postgres123
     driver-class-name: org.postgresql.Driver
   jpa:
     properties:
