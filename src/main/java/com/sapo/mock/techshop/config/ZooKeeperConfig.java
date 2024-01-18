@@ -12,6 +12,6 @@ public class ZooKeeperConfig {
     @Bean(initMethod = "start", destroyMethod = "close")
     public CuratorFramework curatorFramework() {
         return CuratorFrameworkFactory
-                .newClient("localhost:2181", new ExponentialBackoffRetry(1000, 1));
+                .newClient("localhost:2181", new ExponentialBackoffRetry(1000, 0));
     }
 }

@@ -25,6 +25,6 @@ public class TestJob {
 
         // Đặt watcher cho counter
         watcher.setWatcher("scheduleTask");
-        activityManager.performActivity("scheduleTask");
+        activityManager.performActivity("scheduleTask", false);
     }
 }

@@ -27,7 +27,7 @@ public class ErrorWatcher implements Watcher {
                 int counterValue = this.getCounterValue();
                 if (counterValue <= 3 && counterValue != 0) {
                     log.info("Retry times: " + counterValue);
-                    activityManager.performActivity(activityName);
+                    activityManager.performActivity(activityName, true);
                 } else if (counterValue == 4) {
                     log.info("Retry max, stop retry");
                     this.resetActivityAndCounter();
@@ -44,7 +44,7 @@ public class ErrorWatcher implements Watcher {
         DistributedAtomicInteger counter = new DistributedAtomicInteger(
                 client,
                 ActivityManager.ERROR_PATH + activityName,
-                new RetryNTimes(10, 1000));
+                new RetryNTimes(0, 1000));
         return counter.get().postValue();
     }
 
