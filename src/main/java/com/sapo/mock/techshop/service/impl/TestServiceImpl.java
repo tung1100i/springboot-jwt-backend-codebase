@@ -1,13 +1,13 @@
 package com.sapo.mock.techshop.service.impl;
 
-import com.sapo.mock.techshop.dto.response.CommentDTO;
 import com.sapo.mock.techshop.model.Comment;
 import com.sapo.mock.techshop.repository.CommentRepository;
 import com.sapo.mock.techshop.service.TestService;
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -65,8 +67,9 @@ public class TestServiceImpl implements TestService {
     @Override
     public void pushDocument() throws IOException {
         //get all comment
-        List<Comment> comments = commentRepository.getAllComment();
+        List<String> comments = commentRepository.getAllComment();
 
+        BulkRequest bulkRequest = new BulkRequest();
         List<List<String>> contentsOfCv = new ArrayList<>();
         Random rand = new Random();
         int randomNumber = 0;
@@ -80,33 +83,52 @@ public class TestServiceImpl implements TestService {
             System.out.println(" - to: " + newRandomNumber);
             List<String> str = new ArrayList<>();
             for (int j = randomNumber; j < newRandomNumber; j++) {
-                str.add(comments.get(j).getCommentText());
+                str.add(comments.get(j));
             }
             contentsOfCv.add(str);
             if (newRandomNumber > 48800) break;
 
             randomNumber = newRandomNumber;
         }
+        String dateString = "1980-01-01 00:01:01";
 
         //push comment to elk
         for (List<String> contentArray : contentsOfCv) {
+
             Map<String, Object> jsonMap = new HashMap<>();
-            jsonMap.put("listCv", Arrays.asList(
-                    Map.of(
-                            "content", contentArray.toArray(new String[0]),
-                            "fileName", "fine_name_1.pdf",
-                            "fileId", 123534
-                    )
-            ));
+            Map<String, Object> jsonSubMap = new HashMap<>();
+            jsonSubMap.put("content", contentArray);
+            jsonSubMap.put("fileName", "fine_name_1.pdf");
+            jsonSubMap.put("fileId", 123534);
+            jsonMap.put("listCv", Collections.singletonList(jsonSubMap));
+            jsonMap.put("modifiedTime", this.getDate(dateString));
             // Tạo một yêu cầu đẩy dữ liệu vào Elasticsearch
-            IndexRequest indexRequest = new IndexRequest("test_index")
-                    .source(jsonMap, XContentType.JSON);
+            bulkRequest.add(new IndexRequest("test_index")
+                    .type("_doc")
+                    .source(jsonMap, XContentType.JSON));
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime startDateTime = LocalDateTime.parse(dateString, formatter);
+            dateString = this.toStringDate(startDateTime.plusMinutes(10));
+        }
+        BulkResponse response = client.bulk(bulkRequest, RequestOptions.DEFAULT);
 
-            // Thực hiện yêu cầu
-            IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+        if (response.hasFailures()) {
+            System.out.println("false");
+            System.out.println(response.buildFailureMessage());
 
-            System.out.println("Response id: " + indexResponse.getId());
+        } else {
+            System.out.println("true");
         }
     }
 
+    private String getDate(String dateString) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime startDateTime = LocalDateTime.parse(dateString, formatter);
+        return this.toStringDate(startDateTime.plusMinutes(10));
+    }
+
+    private String toStringDate(LocalDateTime date) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return date.format(formatter);
+    }
 }

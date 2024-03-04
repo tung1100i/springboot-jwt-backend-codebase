@@ -10,6 +10,6 @@ import java.util.List;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
-    @Query(value = "Select * from comment", nativeQuery = true)
-    List<Comment> getAllComment();
+    @Query(value = "Select m.comment_text from comment m ", nativeQuery = true)
+    List<String> getAllComment();
 }
